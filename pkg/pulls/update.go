@@ -4,25 +4,18 @@ import (
 	"fmt"
 
 	"github.com/google/go-github/v32/github"
-	"github.com/mitchellh/cli"
-
-	"github.com/hashicorp/errwrap"
-	"github.com/hashicorp/inclusify/internal/inputs"
 	"github.com/hashicorp/inclusify/pkg/gh"
-	log "github.com/sirupsen/logrus"
 )
 
 // UpdateCommand is a struct used to configure a Command for updating open
 // PR's that target master to target the new $base
 type UpdateCommand struct {
-	UI cli.Ui
+	Config *gh.GitHub
 }
 
 // GetOpenPRs returns an array of all open PR's that target the $base branch
 func GetOpenPRs(config *gh.GitHub) (pulls []*github.PullRequest, err error) {
-	log.WithFields(log.Fields{
-		"base": config.Base,
-	}).Info("Getting all open PR's targetting the $base branch")
+	config.Logger.Info("Getting all open PR's targetting the $base branch", "base", config.Base)
 
 	// Setup request to list all open PR's targetting the $base branch
 	var allPulls []*github.PullRequest
@@ -36,7 +29,7 @@ func GetOpenPRs(config *gh.GitHub) (pulls []*github.PullRequest, err error) {
 	for {
 		pulls, resp, err := config.Client.PullRequests.List(config.Ctx, config.Owner, config.Repo, opts)
 		if err != nil {
-			return nil, errwrap.Wrapf("Failed to retrieve all open PR's: {{err}}", err)
+			return nil, fmt.Errorf("Failed to retrieve all open PR's: %w", err)
 		}
 		allPulls = append(allPulls, pulls...)
 		if resp.NextPage == 0 {
@@ -45,10 +38,7 @@ func GetOpenPRs(config *gh.GitHub) (pulls []*github.PullRequest, err error) {
 		opts.Page = resp.NextPage
 	}
 
-	log.WithFields(log.Fields{
-		"base":    config.Base,
-		"prCount": len(allPulls),
-	}).Info("Retrieved all open PR's targetting the $base branch")
+	config.Logger.Info("Retrieved all open PR's targetting the $base branch", "base", config.Base, "prCount", len(allPulls))
 
 	return allPulls, nil
 }
@@ -62,15 +52,10 @@ func UpdateOpenPRs(config *gh.GitHub, pulls []*github.PullRequest, targetRef *gi
 		// Attempt to update the PR
 		updatedPull, _, err := config.Client.PullRequests.Edit(config.Ctx, config.Owner, config.Repo, *pull.Number, pull)
 		if err != nil {
-			errString := fmt.Sprintf("Failed to update base branch of PR %s", *pull.URL)
-			return errwrap.Wrapf(errString+": {{err}}", err)
+			errString := fmt.Sprintf("failed to update base branch of PR %s", *pull.URL)
+			return fmt.Errorf(errString+": %w", err)
 		}
-		log.WithFields(log.Fields{
-			"base":       config.Base,
-			"target":     config.Target,
-			"pullNumber": updatedPull.GetNumber(),
-			"pullURL":    updatedPull.GetHTMLURL(),
-		}).Info("Successfully updated base branch of PR from $base to $target")
+		config.Logger.Info("Successfully updated base branch of PR from $base to $target", "base", config.Base, "target", config.Target, "pullNumber", updatedPull.GetNumber(), "pullURL", updatedPull.GetHTMLURL())
 	}
 	return nil
 }
@@ -81,10 +66,10 @@ func GetRef(config *gh.GitHub) (targetRef *github.Reference, err error) {
 	ref := fmt.Sprintf("heads/%s", config.Target)
 	targetRef, _, err = config.Client.Git.GetRef(config.Ctx, config.Owner, config.Repo, ref)
 	if err != nil {
-		return nil, errwrap.Wrapf("Failed to get $target ref: {{err}}", err)
+		return nil, fmt.Errorf("failed to get $target ref: %w", err)
 	}
 	if targetRef == nil {
-		return nil, fmt.Errorf("No $target ref, %s, was found", config.Target)
+		return nil, fmt.Errorf("no $target ref, %s, was found", config.Target)
 	}
 	return targetRef, nil
 }
@@ -92,35 +77,29 @@ func GetRef(config *gh.GitHub) (targetRef *github.Reference, err error) {
 // Run updates all open PR's that point to $base to instead point to $target
 // Example: Update all open PR's that point to 'master' to point to 'main'
 func (c *UpdateCommand) Run(args []string) int {
-	// Validate inputs
-	config, err := inputs.Validate(args)
-	if err != nil {
-		return c.exitError(err)
-	}
-
 	// Get a list of open PR's targetting the $base branch
-	pulls, err := GetOpenPRs(config)
+	pulls, err := GetOpenPRs(c.Config)
 	if err != nil {
 		return c.exitError(err)
 	}
 	if len(pulls) == 0 {
-		log.Info("Exiting -- There are no open PR's to update")
+		c.Config.Logger.Info("Exiting -- There are no open PR's to update")
 		return 0
 	}
 
 	// Get the ref of the $target branch
-	ref, err := GetRef(config)
+	ref, err := GetRef(c.Config)
 	if err != nil {
 		return c.exitError(err)
 	}
 
 	// Update all open PR's that point to $base to point to $target
-	err = UpdateOpenPRs(config, pulls, ref)
+	err = UpdateOpenPRs(c.Config, pulls, ref)
 	if err != nil {
 		return c.exitError(err)
 	}
 
-	log.Info("Success!")
+	c.Config.Logger.Info("Success!")
 
 	return 0
 }
@@ -128,7 +107,7 @@ func (c *UpdateCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *UpdateCommand) exitError(err error) int {
-	c.UI.Error(err.Error())
+	c.Config.Logger.Error(err.Error())
 	return 1
 }
 

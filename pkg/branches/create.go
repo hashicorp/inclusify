@@ -1,21 +1,18 @@
 package branch
 
 import (
+	"context"
 	"fmt"
-
-	log "github.com/sirupsen/logrus"
+	"time"
 
 	"github.com/google/go-github/v32/github"
-	"github.com/hashicorp/errwrap"
-	"github.com/hashicorp/inclusify/internal/inputs"
 	"github.com/hashicorp/inclusify/pkg/gh"
-	"github.com/mitchellh/cli"
 )
 
 // CreateCommand is a struct used to configure a Command for creating new
 // GitHub branches in the remote repo
 type CreateCommand struct {
-	UI cli.Ui
+	Config *gh.GitHub
 }
 
 // Create a branch called $target from the head commit of $base
@@ -24,16 +21,17 @@ type CreateCommand struct {
 func createBranch(config *gh.GitHub, base string, target string) error {
 	// Get base Ref
 	refName := fmt.Sprintf("refs/heads/%s", base)
-	ref, _, err := config.Client.Git.GetRef(config.Ctx, config.Owner, config.Repo, refName)
+	ctx, _ := context.WithTimeout(config.Ctx, 10*time.Second)
+	ref, _, err := config.Client.Git.GetRef(ctx, config.Owner, config.Repo, refName)
 	if err != nil {
-		return errwrap.Wrapf("Call to get master ref returned error: {{err}}", err)
+		return fmt.Errorf("call to get master ref returned error: %w", err)
 	}
 
 	// Get base SHA
 	sha := ref.Object.GetSHA()
 
 	// Setup to create a new ref called $target off of $base
-	targetRef := "refs/heads/" + target
+	targetRef := fmt.Sprintf("refs/heads/%s", target)
 	targetRefObj := &github.Reference{
 		Ref: &targetRef,
 		Object: &github.GitObject{
@@ -44,7 +42,7 @@ func createBranch(config *gh.GitHub, base string, target string) error {
 	// Create $target ref
 	_, _, err = config.Client.Git.CreateRef(config.Ctx, config.Owner, config.Repo, targetRefObj)
 	if err != nil {
-		return errwrap.Wrapf("Call to create base ref returned error: {{err}}", err)
+		return fmt.Errorf("call to create base ref returned error: %w", err)
 	}
 
 	return nil
@@ -54,18 +52,9 @@ func createBranch(config *gh.GitHub, base string, target string) error {
 // It also creates a $tmpBranch that will be used for CI changes
 // Example: Create branches 'main' and 'update-ci-references' off of master
 func (c *CreateCommand) Run(args []string) int {
-	// Validate inputs
-	config, err := inputs.Validate(args)
-	if err != nil {
-		return c.exitError(err)
-	}
-
 	// Create branch $target off of head commit in $base
-	log.WithFields(log.Fields{
-		"target": config.Target,
-		"base":   config.Base,
-	}).Info("Creating new branch $target off of $base")
-	err = createBranch(config, config.Base, config.Target)
+	c.Config.Logger.Info("Creating new branch $target off of $base", "target", c.Config.Target, "base", c.Config.Base)
+	err := createBranch(c.Config, c.Config.Base, c.Config.Target)
 	if err != nil {
 		return c.exitError(err)
 	}
@@ -74,16 +63,13 @@ func (c *CreateCommand) Run(args []string) int {
 	// CI changes will be pushed to the $tmpBranch and a PR will be opened
 	// to merge those changes into $target
 	tmpBranch := "update-ci-references"
-	log.WithFields(log.Fields{
-		"base":   config.Target,
-		"target": tmpBranch,
-	}).Info("Creating new temp branch $target off of $base")
-	err = createBranch(config, config.Base, tmpBranch)
+	c.Config.Logger.Info("Creating new temp branch $target off of $base", "target", tmpBranch, "base", c.Config.Target)
+	err = createBranch(c.Config, c.Config.Base, tmpBranch)
 	if err != nil {
 		return c.exitError(err)
 	}
 
-	log.Info("Success!")
+	c.Config.Logger.Info("Success!")
 
 	return 0
 }
@@ -91,7 +77,7 @@ func (c *CreateCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *CreateCommand) exitError(err error) int {
-	c.UI.Error(err.Error())
+	c.Config.Logger.Error(err.Error())
 	return 1
 }
 

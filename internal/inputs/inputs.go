@@ -2,19 +2,20 @@ package inputs
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/hashicorp/go-hclog"
+	"golang.org/x/oauth2"
 
 	github "github.com/google/go-github/v32/github"
 	gh "github.com/hashicorp/inclusify/pkg/gh"
 	nflag "github.com/namsral/flag"
-
-	"github.com/hashicorp/errwrap"
-	"golang.org/x/oauth2"
 )
 
-// Validate verifies that all required cmd line flags / env vars have been set.
-// Users can pass in flags when calling a subcommand, or set env vars with the prefix 'INCLUSIFY_'.
-// If both values are set, the env var value will be used.
-func Validate(args []string) (config *gh.GitHub, err error) {
+// ParseAndValidate parses the cmd line flags / env vars, and verifies that all required
+// flags have been set. Users can pass in flags when calling a subcommand, or set env vars
+// with the prefix 'INCLUSIFY_'. If both values are set, the env var value will be used.
+func ParseAndValidate(args []string) (config *gh.GitHub, err error) {
 	var owner string
 	var repo string
 	var base = "master"
@@ -32,10 +33,10 @@ func Validate(args []string) (config *gh.GitHub, err error) {
 
 	// Parse args and check for errors
 	if err := flags.Parse(args); err != nil {
-		return config, errwrap.Wrapf("Error parsing inputs: {{err}}", err)
+		return config, fmt.Errorf("Error parsing inputs: %w", err)
 	}
 	if owner == "" || repo == "" || token == "" {
-		return config, errwrap.Wrapf("Required inputs are missing\nPass in all required flags or set env vars with the prefix INCLUSIFY\nRun [subcommand] --help to view required inputs", err)
+		return config, fmt.Errorf("Required inputs are missing\nPass in all required flags or set env vars with the prefix INCLUSIFY\nRun [subcommand] --help to view required inputs")
 	}
 
 	// Setup GitHub Client
@@ -44,6 +45,12 @@ func Validate(args []string) (config *gh.GitHub, err error) {
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
+
+	// Setup a global logger
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:  "inclusify",
+		Level: hclog.LevelFromString("INFO"),
+	})
 
 	// Store all inputs in a struct
 	config = &gh.GitHub{
@@ -54,6 +61,7 @@ func Validate(args []string) (config *gh.GitHub, err error) {
 		Token:  token,
 		Client: github.NewClient(tc),
 		Ctx:    ctx,
+		Logger: logger,
 	}
 
 	return config, nil

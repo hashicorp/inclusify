@@ -3,6 +3,8 @@ package gh
 import (
 	"context"
 
+	"github.com/hashicorp/go-hclog"
+
 	github "github.com/google/go-github/v32/github"
 )
 
@@ -15,4 +17,5 @@ type GitHub struct {
 	Token  string
 	Ctx    context.Context
 	Client *github.Client
+	Logger hclog.Logger
 }

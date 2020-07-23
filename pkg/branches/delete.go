@@ -3,44 +3,36 @@ package branch
 import (
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/hashicorp/errwrap"
-	"github.com/hashicorp/inclusify/internal/inputs"
-	"github.com/mitchellh/cli"
+	"github.com/hashicorp/inclusify/pkg/gh"
 )
 
 // DeleteCommand is a struct used to configure a Command for deleting the
 // GitHub branch, $base, in the remote repo
 type DeleteCommand struct {
-	UI cli.Ui
+	Config *gh.GitHub
 }
 
-// Run deletes the $base branch in the remote repo
+// Run removes the branch protection from the $base branch
+// and deletes the $base branch from the remote repo
 // $base defaults to "master" if no $base flag or env var is provided
 // Example: Delete the 'master' branch
 func (c *DeleteCommand) Run(args []string) int {
-	// Validate inputs
-	config, err := inputs.Validate(args)
+	// Remove the branch protection from the old base
+	c.Config.Logger.Info("Removing branch protection from the old default branch, $base", "base", c.Config.Base)
+	_, err := c.Config.Client.Repositories.RemoveBranchProtection(c.Config.Ctx, c.Config.Owner, c.Config.Repo, c.Config.Base)
 	if err != nil {
 		return c.exitError(err)
 	}
 
-	log.WithFields(log.Fields{
-		"branch": config.Base,
-	}).Info("Attempting to delete branch")
-
-	// Delete Ref on GitHub
-	refName := fmt.Sprintf("refs/heads/%s", config.Base)
-	_, err = config.Client.Git.DeleteRef(config.Ctx, config.Owner, config.Repo, refName)
+	// Delete the old base branch from GitHub
+	c.Config.Logger.Info("Attempting to delete branch", "branch", c.Config.Base)
+	refName := fmt.Sprintf("refs/heads/%s", c.Config.Base)
+	_, err = c.Config.Client.Git.DeleteRef(c.Config.Ctx, c.Config.Owner, c.Config.Repo, refName)
 	if err != nil {
-		return c.exitError(errwrap.Wrapf("Failed to delete ref: {{err}}", err))
+		return c.exitError(fmt.Errorf("failed to delete ref: %w", err))
 	}
 
-	log.WithFields(log.Fields{
-		"branch": config.Base,
-		"ref":    refName,
-	}).Info("Success!")
+	c.Config.Logger.Info("Success! $branch has been deleted", "branch", c.Config.Base, "ref", refName)
 
 	return 0
 }
@@ -48,7 +40,7 @@ func (c *DeleteCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *DeleteCommand) exitError(err error) int {
-	c.UI.Error(err.Error())
+	c.Config.Logger.Error(err.Error())
 	return 1
 }
 
