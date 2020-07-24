@@ -18,11 +18,9 @@ type UpdateCommand struct {
 // SetupBranchProtectionReq sets up the branch protection request
 func SetupBranchProtectionReq(config *gh.GitHub, baseProtection *github.Protection) (req *github.ProtectionRequest, err error) {
 	// Declare vars
-	drUsers := []string{}
-	drTeams := []string{}
-	brUsers := []string{}
-	brTeams := []string{}
-	brApps := []string{}
+	var (
+		drUsers, drTeams, brUsers, brTeams, brApps []string
+	)
 
 	targetProtectionReq := &github.ProtectionRequest{}
 	brRequest := &github.BranchRestrictionsRequest{}
@@ -134,7 +132,8 @@ func CopyBranchProtection(config *gh.GitHub, base string, target string) (err er
 	baseProtection, res, err := config.Client.Repositories.GetBranchProtection(config.Ctx, config.Owner, config.Repo, base)
 	if err != nil {
 		if res.StatusCode == 404 {
-			return fmt.Errorf("Exiting -- The old base branch isn't protected, so there's nothing more to do")
+			config.Logger.Info("Exiting -- The old base branch isn't protected, so there's nothing more to do")
+			return nil
 		}
 		return fmt.Errorf("failed to get $base branch protection: %w", err)
 	}

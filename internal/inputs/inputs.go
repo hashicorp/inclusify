@@ -16,11 +16,11 @@ import (
 // flags have been set. Users can pass in flags when calling a subcommand, or set env vars
 // with the prefix 'INCLUSIFY_'. If both values are set, the env var value will be used.
 func ParseAndValidate(args []string) (config *gh.GitHub, err error) {
-	var owner string
-	var repo string
+	var (
+		owner, repo, token string
+	)
 	var base = "master"
 	var target = "main"
-	var token string
 
 	// Values can be passed in to the subcommands as inputs flags,
 	// or set as env vars with the prefix "INCLUSIFY_"
@@ -33,10 +33,10 @@ func ParseAndValidate(args []string) (config *gh.GitHub, err error) {
 
 	// Parse args and check for errors
 	if err := flags.Parse(args); err != nil {
-		return config, fmt.Errorf("Error parsing inputs: %w", err)
+		return config, fmt.Errorf("error parsing inputs: %w", err)
 	}
 	if owner == "" || repo == "" || token == "" {
-		return config, fmt.Errorf("Required inputs are missing\nPass in all required flags or set env vars with the prefix INCLUSIFY\nRun [subcommand] --help to view required inputs")
+		return config, fmt.Errorf("required inputs are missing\nPass in all required flags or set env vars with the prefix INCLUSIFY\nRun [subcommand] --help to view required inputs")
 	}
 
 	// Setup GitHub Client
