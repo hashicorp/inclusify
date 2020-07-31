@@ -2,10 +2,11 @@ package gh
 
 import (
 	"context"
-
-	"github.com/hashicorp/go-hclog"
+	"errors"
 
 	github "github.com/google/go-github/v32/github"
+	"github.com/hashicorp/go-hclog"
+	"golang.org/x/oauth2"
 )
 
 // TODO: Probably get rid of GitHub
@@ -47,6 +48,17 @@ func (b *baseGithubInteractor) GetGit() GithubGitInteractor {
 }
 
 // NewBaseGithubInteractor is a constructor for baseGithubInteractor.
-func NewBaseGithubInteractor(user, token string) (*baseGithubInteractor, error) {
-	return nil, nil
+func NewBaseGithubInteractor(token string) (*baseGithubInteractor, error) {
+	if token == "" {
+		return nil, errors.New("cannot create GitHub Client with empty token")
+	}
+
+	ctx := context.Background()
+	oauthToken := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	oathClient := oauth2.NewClient(ctx, oauthToken)
+	client := github.NewClient(oathClient)
+
+	return &baseGithubInteractor{
+		github: client,
+	}, nil
 }

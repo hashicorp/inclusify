@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/google/go-github/v32/github"
-	"github.com/hashicorp/inclusify/pkg/gh"
 	"github.com/mitchellh/cli"
+
+	"github.com/hashicorp/inclusify/pkg/gh"
 )
 
 // CreateCommand is a struct used to configure a Command for creating new
