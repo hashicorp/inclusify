@@ -2,27 +2,35 @@ package branch
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"time"
 
 	"github.com/google/go-github/v32/github"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/mitchellh/cli"
 )
 
 // CreateCommand is a struct used to configure a Command for creating new
 // GitHub branches in the remote repo
 type CreateCommand struct {
-	Config *gh.GitHub
+	UI           cli.Ui
+	GithubClient gh.GithubInteractor
+
+	Owner, Repo  string
+	base, target string
 }
 
 // Create a branch called $target from the head commit of $base
 // The $base branch must already exist
 // Example: Create a branch 'main' off of 'master'
-func createBranch(config *gh.GitHub, base string, target string) error {
+func (c *CreateCommand) createBranch(branch string) error {
 	// Get base Ref
-	refName := fmt.Sprintf("refs/heads/%s", base)
-	ctx, _ := context.WithTimeout(config.Ctx, 10*time.Second)
-	ref, _, err := config.Client.Git.GetRef(ctx, config.Owner, config.Repo, refName)
+	refName := fmt.Sprintf("refs/heads/%s", c.base)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	ref, _, err := c.GithubClient.GetGit().GetRef(ctx, c.Owner, c.Repo, refName)
 	if err != nil {
 		return fmt.Errorf("call to get master ref returned error: %w", err)
 	}
@@ -31,7 +39,7 @@ func createBranch(config *gh.GitHub, base string, target string) error {
 	sha := ref.Object.GetSHA()
 
 	// Setup to create a new ref called $target off of $base
-	targetRef := fmt.Sprintf("refs/heads/%s", target)
+	targetRef := fmt.Sprintf("refs/heads/%s", branch)
 	targetRefObj := &github.Reference{
 		Ref: &targetRef,
 		Object: &github.GitObject{
@@ -40,7 +48,7 @@ func createBranch(config *gh.GitHub, base string, target string) error {
 	}
 
 	// Create $target ref
-	_, _, err = config.Client.Git.CreateRef(config.Ctx, config.Owner, config.Repo, targetRefObj)
+	_, _, err = c.GithubClient.GetGit().CreateRef(ctx, c.Owner, c.Repo, targetRefObj)
 	if err != nil {
 		return fmt.Errorf("call to create base ref returned error: %w", err)
 	}
@@ -52,9 +60,21 @@ func createBranch(config *gh.GitHub, base string, target string) error {
 // It also creates a $tmpBranch that will be used for CI changes
 // Example: Create branches 'main' and 'update-ci-references' off of master
 func (c *CreateCommand) Run(args []string) int {
+	// flag parsin'
+	fs := flag.NewFlagSet("create", flag.ExitOnError)
+
+	fs.StringVar(&c.target, "target", c.target, "")
+	fs.StringVar(&c.base, "base", c.base, "")
+
+	if err := fs.Parse(args); err != nil {
+		return c.exitError(fmt.Errorf("error parsing command line flags: %w", err))
+	}
+
 	// Create branch $target off of head commit in $base
-	c.Config.Logger.Info("Creating new branch $target off of $base", "target", c.Config.Target, "base", c.Config.Base)
-	err := createBranch(c.Config, c.Config.Base, c.Config.Target)
+	c.UI.Info(fmt.Sprintf(
+		"Creating new branch %s off of %s", c.target, c.base,
+	))
+	err := c.createBranch(c.target)
 	if err != nil {
 		return c.exitError(err)
 	}
@@ -63,13 +83,15 @@ func (c *CreateCommand) Run(args []string) int {
 	// CI changes will be pushed to the $tmpBranch and a PR will be opened
 	// to merge those changes into $target
 	tmpBranch := "update-ci-references"
-	c.Config.Logger.Info("Creating new temp branch $target off of $base", "target", tmpBranch, "base", c.Config.Target)
-	err = createBranch(c.Config, c.Config.Base, tmpBranch)
+	c.UI.Info(fmt.Sprintf(
+		"Creating new temp branch %s off of %s", tmpBranch, c.base,
+	))
+	err = c.createBranch(tmpBranch)
 	if err != nil {
 		return c.exitError(err)
 	}
 
-	c.Config.Logger.Info("Success!")
+	c.UI.Info("Success!")
 
 	return 0
 }
@@ -77,7 +99,7 @@ func (c *CreateCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *CreateCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
+	c.UI.Error(err.Error())
 	return 1
 }
 
