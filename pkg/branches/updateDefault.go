@@ -21,95 +21,77 @@ type UpdateCommand struct {
 	GithubClient gh.GithubInteractor
 }
 
+// EmptyToNil.....
+func EmptyToNil(inputArr []string) (arr []string) {
+	hi := []string{}
+	if len(inputArr) == 0 {
+		return hi
+	}
+
+	return inputArr
+}
+
 // SetupBranchProtectionReq sets up the branch protection request
 func SetupBranchProtectionReq(c *UpdateCommand, baseProtection *github.Protection) (req *github.ProtectionRequest, err error) {
-	var (
-		drUsers, drTeams, brUsers, brTeams, brApps []string
-	)
-
+	var drUsers []string // &[]string{}
+	var drTeams []string
+	var brUsers []string
+	var brTeams []string
+	var brApps []string
+	prReviewEnforcementReq := &github.PullRequestReviewsEnforcementRequest{}
 	targetProtectionReq := &github.ProtectionRequest{}
-	brRequest := &github.BranchRestrictionsRequest{}
-	prRequest := &github.PullRequestReviewsEnforcementRequest{}
-	drRequest := &github.DismissalRestrictionsRequest{}
 
-	if baseProtection.GetRequiredPullRequestReviews() != nil {
-		if baseProtection.GetRequiredPullRequestReviews().GetDismissalRestrictions() != nil {
-			for _, u := range baseProtection.GetRequiredPullRequestReviews().GetDismissalRestrictions().Users {
-				drUsers = append(drUsers, u.GetLogin())
-			}
-			for _, t := range baseProtection.GetRequiredPullRequestReviews().GetDismissalRestrictions().Teams {
-				drTeams = append(drTeams, t.GetSlug())
-			}
-			users := &drUsers
-			if len(*users) == 0 {
-				users = &[]string{}
-			}
-			teams := &drTeams
-			if len(*teams) == 0 {
-				teams = &[]string{}
-			}
-			drRequest = &github.DismissalRestrictionsRequest{
-				Users: users,
-				Teams: teams,
-			}
-			prReviews := 1
-			if baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount != 0 {
-				prReviews = baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount
-			}
-			prRequest = &github.PullRequestReviewsEnforcementRequest{
-				DismissalRestrictionsRequest: drRequest,
-				DismissStaleReviews:          baseProtection.GetRequiredPullRequestReviews().DismissStaleReviews,
-				RequireCodeOwnerReviews:      baseProtection.GetRequiredPullRequestReviews().RequireCodeOwnerReviews,
-				RequiredApprovingReviewCount: prReviews,
-			}
-		} else {
-			prReviews := 1
-			if baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount != 0 {
-				prReviews = baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount
-			}
-			prRequest = &github.PullRequestReviewsEnforcementRequest{
-				DismissalRestrictionsRequest: nil,
-				DismissStaleReviews:          baseProtection.GetRequiredPullRequestReviews().DismissStaleReviews,
-				RequireCodeOwnerReviews:      baseProtection.GetRequiredPullRequestReviews().RequireCodeOwnerReviews,
-				RequiredApprovingReviewCount: prReviews,
-			}
+	if baseProtection.RequiredPullRequestReviews.GetDismissalRestrictions() != nil {
+		for _, user := range baseProtection.RequiredPullRequestReviews.GetDismissalRestrictions().Users {
+			drUsers = append(drUsers, user.GetLogin())
+		}
+		for _, team := range baseProtection.RequiredPullRequestReviews.GetDismissalRestrictions().Teams {
+			drTeams = append(drTeams, team.GetSlug())
+		}
+
+		for _, user := range baseProtection.GetRestrictions().Users {
+			brUsers = append(brUsers, user.GetLogin())
+		}
+		for _, team := range baseProtection.GetRestrictions().Teams {
+			brTeams = append(brTeams, team.GetSlug())
+		}
+		for _, app := range baseProtection.GetRestrictions().Apps {
+			brApps = append(brApps, app.GetSlug())
 		}
 	}
 
-	if baseProtection.GetRestrictions() != nil {
-		for _, u := range baseProtection.GetRestrictions().Users {
-			brUsers = append(brUsers, u.GetLogin())
+	user := EmptyToNil(drUsers)
+	teams := EmptyToNil(drTeams)
+
+	dismissalRestrictionsReq := &github.DismissalRestrictionsRequest{
+		Users: &user,
+		Teams: &teams,
+	}
+
+	if baseProtection.RequiredPullRequestReviews != nil {
+		prReviewEnforcementReq = &github.PullRequestReviewsEnforcementRequest{
+			DismissalRestrictionsRequest: dismissalRestrictionsReq,
+			DismissStaleReviews:          baseProtection.RequiredPullRequestReviews.DismissStaleReviews,
+			RequireCodeOwnerReviews:      baseProtection.RequiredPullRequestReviews.RequireCodeOwnerReviews,
+			RequiredApprovingReviewCount: baseProtection.RequiredPullRequestReviews.RequiredApprovingReviewCount,
 		}
-		for _, t := range baseProtection.GetRestrictions().Teams {
-			brTeams = append(brTeams, t.GetSlug())
-		}
-		for _, a := range baseProtection.GetRestrictions().Apps {
-			brApps = append(brApps, a.GetSlug())
-		}
-		users := &brUsers
-		if len(*users) == 0 {
-			users = &[]string{}
-		}
-		teams := &brTeams
-		if len(*teams) == 0 {
-			teams = &[]string{}
-		}
-		apps := &brApps
-		if len(*apps) == 0 {
-			apps = &[]string{}
-		}
-		brRequest = &github.BranchRestrictionsRequest{
-			Users: *users,
-			Teams: *teams,
-			Apps:  *apps,
-		}
+	}
+
+	user = EmptyToNil(brUsers)
+	teams = EmptyToNil(brTeams)
+	apps := EmptyToNil(brApps)
+
+	branchRestrictionsReq := &github.BranchRestrictionsRequest{
+		Users: user,
+		Teams: teams,
+		Apps:  apps,
 	}
 
 	targetProtectionReq = &github.ProtectionRequest{
 		RequiredStatusChecks:       baseProtection.GetRequiredStatusChecks(),
-		RequiredPullRequestReviews: prRequest,
+		RequiredPullRequestReviews: prReviewEnforcementReq,
 		EnforceAdmins:              baseProtection.GetEnforceAdmins().Enabled,
-		Restrictions:               brRequest,
+		Restrictions:               branchRestrictionsReq,
 		RequireLinearHistory:       &baseProtection.GetRequireLinearHistory().Enabled,
 		AllowForcePushes:           &baseProtection.GetAllowForcePushes().Enabled,
 		AllowDeletions:             &baseProtection.GetAllowDeletions().Enabled,
