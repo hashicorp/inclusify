@@ -23,34 +23,50 @@ type UpdateCommand struct {
 
 // SetupBranchProtectionReq sets up the branch protection request
 func SetupBranchProtectionReq(c *UpdateCommand, base *github.Protection) *github.ProtectionRequest {
-	enforceUsers := userStrings(base.RequiredPullRequestReviews.DismissalRestrictions.Users)
-	enforceTeams := teamStrings(base.RequiredPullRequestReviews.DismissalRestrictions.Teams)
-	enforceReq := &github.PullRequestReviewsEnforcementRequest{
-		DismissalRestrictionsRequest: &github.DismissalRestrictionsRequest{
-			Users: &enforceUsers,
-			Teams: &enforceTeams,
-		},
-		DismissStaleReviews:          base.RequiredPullRequestReviews.DismissStaleReviews,
-		RequireCodeOwnerReviews:      base.RequiredPullRequestReviews.RequireCodeOwnerReviews,
-		RequiredApprovingReviewCount: base.RequiredPullRequestReviews.RequiredApprovingReviewCount,
-	}
-
-	branchReq := &github.BranchRestrictionsRequest{
-		Users: userStrings(base.Restrictions.Users),
-		Teams: teamStrings(base.Restrictions.Teams),
-		Apps:  appStrings(base.Restrictions.Apps),
-	}
-
 	req := &github.ProtectionRequest{
 		RequiredStatusChecks:       base.RequiredStatusChecks,
-		RequiredPullRequestReviews: enforceReq,
+		RequiredPullRequestReviews: createRequiredPullRequestReviewEnforcementRequest(base.RequiredPullRequestReviews),
 		EnforceAdmins:              base.EnforceAdmins.Enabled,
-		Restrictions:               branchReq,
+		Restrictions:               createBranchRestrictionsRequest(base.Restrictions),
 		RequireLinearHistory:       &base.RequireLinearHistory.Enabled,
 		AllowForcePushes:           &base.AllowForcePushes.Enabled,
 		AllowDeletions:             &base.AllowDeletions.Enabled,
 	}
 	return req
+}
+
+func createBranchRestrictionsRequest(r *github.BranchRestrictions) *github.BranchRestrictionsRequest {
+	if r == nil {
+		return nil
+	}
+	return &github.BranchRestrictionsRequest{
+		Users: userStrings(r.Users),
+		Teams: teamStrings(r.Teams),
+		Apps:  appStrings(r.Apps),
+	}
+}
+
+func createRequiredPullRequestReviewEnforcementRequest(rp *github.PullRequestReviewsEnforcement) *github.PullRequestReviewsEnforcementRequest {
+	if rp == nil {
+		return nil
+	}
+	reviewCount := 1
+	if rp.RequiredApprovingReviewCount > 0 {
+		reviewCount = rp.RequiredApprovingReviewCount
+	}
+	enforceUsers := userStrings(rp.DismissalRestrictions.Users)
+	enforceTeams := teamStrings(rp.DismissalRestrictions.Teams)
+	enforceReq := &github.PullRequestReviewsEnforcementRequest{
+		DismissalRestrictionsRequest: &github.DismissalRestrictionsRequest{
+			Users: &enforceUsers,
+			Teams: &enforceTeams,
+		},
+		DismissStaleReviews:          rp.DismissStaleReviews,
+		RequireCodeOwnerReviews:      rp.RequireCodeOwnerReviews,
+		RequiredApprovingReviewCount: reviewCount,
+	}
+
+	return enforceReq
 }
 
 func userStrings(users []*github.User) []string {
@@ -93,7 +109,7 @@ func CopyBranchProtection(c *UpdateCommand, base string, target string) (err err
 	}
 
 	c.Config.Logger.Info("Creating the branch protection request for branch", "branch", c.Config.Target)
-	targetProtectionReq, err := SetupBranchProtectionReq(c, baseProtection)
+	targetProtectionReq := SetupBranchProtectionReq(c, baseProtection)
 	if err != nil {
 		return fmt.Errorf("failed to create the branch protection request: %w", err)
 	}
