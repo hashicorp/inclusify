@@ -21,25 +21,32 @@ type UpdateCommand struct {
 	GithubClient gh.GithubInteractor
 }
 
-// EmptyToNil.....
+// EmptyToNil returns the inputArr, if the len is > 0, or []string{}
+// This is required for the github call to update the branch protection...
 func EmptyToNil(inputArr []string) (arr []string) {
-	hi := []string{}
+	empty := []string{}
 	if len(inputArr) == 0 {
-		return hi
+		return empty
 	}
-
 	return inputArr
 }
 
 // SetupBranchProtectionReq sets up the branch protection request
+// Will pay $100 to anyone who can make this function this less terrible :)
 func SetupBranchProtectionReq(c *UpdateCommand, baseProtection *github.Protection) (req *github.ProtectionRequest, err error) {
-	var drUsers []string // &[]string{}
+	var drUsers []string
 	var drTeams []string
 	var brUsers []string
 	var brTeams []string
 	var brApps []string
+
+	dismissionRestrictions := true
+	branchRestrictions := true
+
 	prReviewEnforcementReq := &github.PullRequestReviewsEnforcementRequest{}
 	targetProtectionReq := &github.ProtectionRequest{}
+	dismissalRestrictionsReq := &github.DismissalRestrictionsRequest{}
+	branchRestrictionsReq := &github.BranchRestrictionsRequest{}
 
 	if baseProtection.RequiredPullRequestReviews.GetDismissalRestrictions() != nil {
 		for _, user := range baseProtection.RequiredPullRequestReviews.GetDismissalRestrictions().Users {
@@ -63,38 +70,78 @@ func SetupBranchProtectionReq(c *UpdateCommand, baseProtection *github.Protectio
 	user := EmptyToNil(drUsers)
 	teams := EmptyToNil(drTeams)
 
-	dismissalRestrictionsReq := &github.DismissalRestrictionsRequest{
-		Users: &user,
-		Teams: &teams,
+	if len(user) != 0 || len(teams) != 0 {
+		dismissalRestrictionsReq = &github.DismissalRestrictionsRequest{
+			Users: &user,
+			Teams: &teams,
+		}
+	} else {
+		dismissionRestrictions = false
 	}
 
 	if baseProtection.RequiredPullRequestReviews != nil {
-		prReviewEnforcementReq = &github.PullRequestReviewsEnforcementRequest{
-			DismissalRestrictionsRequest: dismissalRestrictionsReq,
-			DismissStaleReviews:          baseProtection.RequiredPullRequestReviews.DismissStaleReviews,
-			RequireCodeOwnerReviews:      baseProtection.RequiredPullRequestReviews.RequireCodeOwnerReviews,
-			RequiredApprovingReviewCount: baseProtection.RequiredPullRequestReviews.RequiredApprovingReviewCount,
+		if baseProtection.RequiredPullRequestReviews.RequiredApprovingReviewCount != 0 {
+			if dismissionRestrictions == false {
+				prReviewEnforcementReq = &github.PullRequestReviewsEnforcementRequest{
+					// DismissalRestrictionsRequest: dismissalRestrictionsReq,
+					DismissStaleReviews:          baseProtection.RequiredPullRequestReviews.DismissStaleReviews,
+					RequireCodeOwnerReviews:      baseProtection.RequiredPullRequestReviews.RequireCodeOwnerReviews,
+					RequiredApprovingReviewCount: baseProtection.RequiredPullRequestReviews.RequiredApprovingReviewCount,
+				}
+			} else {
+				prReviewEnforcementReq = &github.PullRequestReviewsEnforcementRequest{
+					DismissalRestrictionsRequest: dismissalRestrictionsReq,
+					DismissStaleReviews:          baseProtection.RequiredPullRequestReviews.DismissStaleReviews,
+					RequireCodeOwnerReviews:      baseProtection.RequiredPullRequestReviews.RequireCodeOwnerReviews,
+					RequiredApprovingReviewCount: baseProtection.RequiredPullRequestReviews.RequiredApprovingReviewCount,
+				}
+			}
+		} else {
+			prReviewEnforcementReq = &github.PullRequestReviewsEnforcementRequest{
+				DismissalRestrictionsRequest: dismissalRestrictionsReq,
+				DismissStaleReviews:          baseProtection.RequiredPullRequestReviews.DismissStaleReviews,
+				RequireCodeOwnerReviews:      baseProtection.RequiredPullRequestReviews.RequireCodeOwnerReviews,
+				// RequiredApprovingReviewCount: baseProtection.RequiredPullRequestReviews.RequiredApprovingReviewCount,
+			}
 		}
+	} else {
+		prReviewEnforcementReq = nil
 	}
 
 	user = EmptyToNil(brUsers)
 	teams = EmptyToNil(brTeams)
 	apps := EmptyToNil(brApps)
 
-	branchRestrictionsReq := &github.BranchRestrictionsRequest{
-		Users: user,
-		Teams: teams,
-		Apps:  apps,
+	if len(user) != 0 || len(teams) != 0 || len(apps) != 0 {
+		branchRestrictionsReq = &github.BranchRestrictionsRequest{
+			Users: user,
+			Teams: teams,
+			Apps:  apps,
+		}
+	} else {
+		branchRestrictions = false
 	}
 
-	targetProtectionReq = &github.ProtectionRequest{
-		RequiredStatusChecks:       baseProtection.GetRequiredStatusChecks(),
-		RequiredPullRequestReviews: prReviewEnforcementReq,
-		EnforceAdmins:              baseProtection.GetEnforceAdmins().Enabled,
-		Restrictions:               branchRestrictionsReq,
-		RequireLinearHistory:       &baseProtection.GetRequireLinearHistory().Enabled,
-		AllowForcePushes:           &baseProtection.GetAllowForcePushes().Enabled,
-		AllowDeletions:             &baseProtection.GetAllowDeletions().Enabled,
+	if branchRestrictions == false {
+		targetProtectionReq = &github.ProtectionRequest{
+			RequiredStatusChecks:       baseProtection.GetRequiredStatusChecks(),
+			RequiredPullRequestReviews: prReviewEnforcementReq,
+			EnforceAdmins:              baseProtection.GetEnforceAdmins().Enabled,
+			// Restrictions:               branchRestrictionsReq,
+			RequireLinearHistory: &baseProtection.GetRequireLinearHistory().Enabled,
+			AllowForcePushes:     &baseProtection.GetAllowForcePushes().Enabled,
+			AllowDeletions:       &baseProtection.GetAllowDeletions().Enabled,
+		}
+	} else {
+		targetProtectionReq = &github.ProtectionRequest{
+			RequiredStatusChecks:       baseProtection.GetRequiredStatusChecks(),
+			RequiredPullRequestReviews: prReviewEnforcementReq,
+			EnforceAdmins:              baseProtection.GetEnforceAdmins().Enabled,
+			Restrictions:               branchRestrictionsReq,
+			RequireLinearHistory:       &baseProtection.GetRequireLinearHistory().Enabled,
+			AllowForcePushes:           &baseProtection.GetAllowForcePushes().Enabled,
+			AllowDeletions:             &baseProtection.GetAllowDeletions().Enabled,
+		}
 	}
 
 	return targetProtectionReq, nil
