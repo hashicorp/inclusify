@@ -35,13 +35,10 @@ func SetupBranchProtectionReq(c *UpdateCommand, base *github.Protection) (*githu
 		RequiredApprovingReviewCount: base.RequiredPullRequestReviews.RequiredApprovingReviewCount,
 	}
 
-	restrictUsers := userStrings(base.Restrictions.Users)
-	restrictTeams := teamStrings(base.Restrictions.Teams)
-	restrictApps := appStrings(base.Restrictions.Apps)
 	branchReq := &github.BranchRestrictionsRequest{
-		Users: restrictUsers,
-		Teams: restrictTeams,
-		Apps:  restrictApps,
+		Users: userStrings(base.Restrictions.Users),
+		Teams: teamStrings(base.Restrictions.Teams),
+		Apps:  appStrings(base.Restrictions.Apps),
 	}
 
 	req := &github.ProtectionRequest{
