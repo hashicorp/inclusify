@@ -1,9 +1,13 @@
 package branch
 
 import (
+	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/mitchellh/cli"
 
 	github "github.com/google/go-github/v32/github"
 )
@@ -12,12 +16,13 @@ import (
 // the GitHub default branch in the remote repo and copying the
 // branch protection from $base to $target
 type UpdateCommand struct {
-	Config *gh.GitHub
+	UI           cli.Ui
+	Config       *config.Config
+	GithubClient gh.GithubInteractor
 }
 
 // SetupBranchProtectionReq sets up the branch protection request
-func SetupBranchProtectionReq(config *gh.GitHub, baseProtection *github.Protection) (req *github.ProtectionRequest, err error) {
-	// Declare vars
+func SetupBranchProtectionReq(c *UpdateCommand, baseProtection *github.Protection) (req *github.ProtectionRequest, err error) {
 	var (
 		drUsers, drTeams, brUsers, brTeams, brApps []string
 	)
@@ -28,7 +33,6 @@ func SetupBranchProtectionReq(config *gh.GitHub, baseProtection *github.Protecti
 	drRequest := &github.DismissalRestrictionsRequest{}
 
 	if baseProtection.GetRequiredPullRequestReviews() != nil {
-		// Set up dismissal restrictions request
 		if baseProtection.GetRequiredPullRequestReviews().GetDismissalRestrictions() != nil {
 			for _, u := range baseProtection.GetRequiredPullRequestReviews().GetDismissalRestrictions().Users {
 				drUsers = append(drUsers, u.GetLogin())
@@ -36,28 +40,42 @@ func SetupBranchProtectionReq(config *gh.GitHub, baseProtection *github.Protecti
 			for _, t := range baseProtection.GetRequiredPullRequestReviews().GetDismissalRestrictions().Teams {
 				drTeams = append(drTeams, t.GetSlug())
 			}
-			drRequest = &github.DismissalRestrictionsRequest{
-				Users: &drUsers,
-				Teams: &drTeams,
+			users := &drUsers
+			if len(*users) == 0 {
+				users = &[]string{}
 			}
-			// Set up PR request
+			teams := &drTeams
+			if len(*teams) == 0 {
+				teams = &[]string{}
+			}
+			drRequest = &github.DismissalRestrictionsRequest{
+				Users: users,
+				Teams: teams,
+			}
+			prReviews := 1
+			if baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount != 0 {
+				prReviews = baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount
+			}
 			prRequest = &github.PullRequestReviewsEnforcementRequest{
 				DismissalRestrictionsRequest: drRequest,
 				DismissStaleReviews:          baseProtection.GetRequiredPullRequestReviews().DismissStaleReviews,
 				RequireCodeOwnerReviews:      baseProtection.GetRequiredPullRequestReviews().RequireCodeOwnerReviews,
-				RequiredApprovingReviewCount: baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount,
+				RequiredApprovingReviewCount: prReviews,
 			}
 		} else {
-			// Set up PR request
+			prReviews := 1
+			if baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount != 0 {
+				prReviews = baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount
+			}
 			prRequest = &github.PullRequestReviewsEnforcementRequest{
+				DismissalRestrictionsRequest: nil,
 				DismissStaleReviews:          baseProtection.GetRequiredPullRequestReviews().DismissStaleReviews,
 				RequireCodeOwnerReviews:      baseProtection.GetRequiredPullRequestReviews().RequireCodeOwnerReviews,
-				RequiredApprovingReviewCount: baseProtection.GetRequiredPullRequestReviews().RequiredApprovingReviewCount,
+				RequiredApprovingReviewCount: prReviews,
 			}
 		}
 	}
 
-	// Set up branch restrictions request
 	if baseProtection.GetRestrictions() != nil {
 		for _, u := range baseProtection.GetRestrictions().Users {
 			brUsers = append(brUsers, u.GetLogin())
@@ -68,86 +86,61 @@ func SetupBranchProtectionReq(config *gh.GitHub, baseProtection *github.Protecti
 		for _, a := range baseProtection.GetRestrictions().Apps {
 			brApps = append(brApps, a.GetSlug())
 		}
+		users := &brUsers
+		if len(*users) == 0 {
+			users = &[]string{}
+		}
+		teams := &brTeams
+		if len(*teams) == 0 {
+			teams = &[]string{}
+		}
+		apps := &brApps
+		if len(*apps) == 0 {
+			apps = &[]string{}
+		}
 		brRequest = &github.BranchRestrictionsRequest{
-			Users: brUsers,
-			Teams: brTeams,
-			Apps:  brApps,
+			Users: *users,
+			Teams: *teams,
+			Apps:  *apps,
 		}
 	}
 
-	// Set up main request
-	if baseProtection.GetRestrictions() != nil {
-		if baseProtection.GetRequiredPullRequestReviews() != nil {
-			// PR and BR good
-			targetProtectionReq = &github.ProtectionRequest{
-				RequiredStatusChecks:       baseProtection.GetRequiredStatusChecks(),
-				RequiredPullRequestReviews: prRequest,
-				EnforceAdmins:              baseProtection.GetEnforceAdmins().Enabled,
-				Restrictions:               brRequest,
-				RequireLinearHistory:       &baseProtection.GetRequireLinearHistory().Enabled,
-				AllowForcePushes:           &baseProtection.GetAllowForcePushes().Enabled,
-				AllowDeletions:             &baseProtection.GetAllowDeletions().Enabled,
-			}
-		} else {
-			// PR nil, BR good
-			targetProtectionReq = &github.ProtectionRequest{
-				RequiredStatusChecks: baseProtection.GetRequiredStatusChecks(),
-				EnforceAdmins:        baseProtection.GetEnforceAdmins().Enabled,
-				Restrictions:         brRequest,
-				RequireLinearHistory: &baseProtection.GetRequireLinearHistory().Enabled,
-				AllowForcePushes:     &baseProtection.GetAllowForcePushes().Enabled,
-				AllowDeletions:       &baseProtection.GetAllowDeletions().Enabled,
-			}
-		}
-	} else {
-		if baseProtection.GetRequiredPullRequestReviews() != nil {
-			// PR good, BR nil
-			targetProtectionReq = &github.ProtectionRequest{
-				RequiredStatusChecks:       baseProtection.GetRequiredStatusChecks(),
-				RequiredPullRequestReviews: prRequest,
-				EnforceAdmins:              baseProtection.GetEnforceAdmins().Enabled,
-				RequireLinearHistory:       &baseProtection.GetRequireLinearHistory().Enabled,
-				AllowForcePushes:           &baseProtection.GetAllowForcePushes().Enabled,
-				AllowDeletions:             &baseProtection.GetAllowDeletions().Enabled,
-			}
-		} else {
-			// PR and BR are nil
-			targetProtectionReq = &github.ProtectionRequest{
-				RequiredStatusChecks: baseProtection.GetRequiredStatusChecks(),
-				EnforceAdmins:        baseProtection.GetEnforceAdmins().Enabled,
-				RequireLinearHistory: &baseProtection.GetRequireLinearHistory().Enabled,
-				AllowForcePushes:     &baseProtection.GetAllowForcePushes().Enabled,
-				AllowDeletions:       &baseProtection.GetAllowDeletions().Enabled,
-			}
-		}
+	targetProtectionReq = &github.ProtectionRequest{
+		RequiredStatusChecks:       baseProtection.GetRequiredStatusChecks(),
+		RequiredPullRequestReviews: prRequest,
+		EnforceAdmins:              baseProtection.GetEnforceAdmins().Enabled,
+		Restrictions:               brRequest,
+		RequireLinearHistory:       &baseProtection.GetRequireLinearHistory().Enabled,
+		AllowForcePushes:           &baseProtection.GetAllowForcePushes().Enabled,
+		AllowDeletions:             &baseProtection.GetAllowDeletions().Enabled,
 	}
 
 	return targetProtectionReq, nil
 }
 
 // CopyBranchProtection will copy the branch protection from base and apply it to $target
-func CopyBranchProtection(config *gh.GitHub, base string, target string) (err error) {
-	// Get branch protection from base
-	config.Logger.Info("Getting branch protection for the $base branch", "base", config.Base)
-	baseProtection, res, err := config.Client.Repositories.GetBranchProtection(config.Ctx, config.Owner, config.Repo, base)
+func CopyBranchProtection(c *UpdateCommand, base string, target string) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	c.Config.Logger.Info("Getting branch protection for branch", "branch", c.Config.Base)
+	baseProtection, res, err := c.GithubClient.GetRepo().GetBranchProtection(ctx, c.Config.Owner, c.Config.Repo, base)
 	if err != nil {
 		if res.StatusCode == 404 {
-			config.Logger.Info("Exiting -- The old base branch isn't protected, so there's nothing more to do")
+			c.Config.Logger.Info("Exiting -- The old base branch isn't protected, so there's nothing more to do")
 			return nil
 		}
 		return fmt.Errorf("failed to get $base branch protection: %w", err)
 	}
 
-	// Create the github branch protection request
-	config.Logger.Info("Creating the branch protection request for $target", "target", config.Target)
-	targetProtectionReq, err := SetupBranchProtectionReq(config, baseProtection)
+	c.Config.Logger.Info("Creating the branch protection request for branch", "branch", c.Config.Target)
+	targetProtectionReq, err := SetupBranchProtectionReq(c, baseProtection)
 	if err != nil {
 		return fmt.Errorf("failed to create the branch protection request: %w", err)
 	}
 
-	// Update the branch protection on the new default branch, $target
-	config.Logger.Info("Updating the branch protection on the $target branch", "target", config.Target)
-	_, _, err = config.Client.Repositories.UpdateBranchProtection(config.Ctx, config.Owner, config.Repo, target, targetProtectionReq)
+	c.Config.Logger.Info("Updating the branch protection on branch", "branch", c.Config.Target)
+	_, _, err = c.GithubClient.GetRepo().UpdateBranchProtection(ctx, c.Config.Owner, c.Config.Repo, target, targetProtectionReq)
 	if err != nil {
 		return fmt.Errorf("failed to update the $target branches protection: %w", err)
 	}
@@ -159,22 +152,21 @@ func CopyBranchProtection(config *gh.GitHub, base string, target string) (err er
 // and copies the branch protection rules from $base to $target
 // Example: Update the repo's default branch from 'master' to 'main'
 func (c *UpdateCommand) Run(args []string) int {
-	// Update the default branch to $target on the remote GitHub repo
-	c.Config.Logger.Info("Updating the default branch in $repo from $base to $target", "repo", c.Config.Repo, "base", c.Config.Base, "target", c.Config.Target)
-	editRepo := &github.Repository{DefaultBranch: &c.Config.Target}
-	_, _, err := c.Config.Client.Repositories.Edit(c.Config.Ctx, c.Config.Owner, c.Config.Repo, editRepo)
-	if err != nil {
-		return c.exitError(fmt.Errorf("failed to update default branch: %w", err))
-	}
+	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// defer cancel()
 
-	// Copy over the branch protection from the old base to the new default branch, $target
+	// c.Config.Logger.Info("Updating the default branch in $repo from $base to $target", "repo", c.Config.Repo, "base", c.Config.Base, "target", c.Config.Target)
+	// editRepo := &github.Repository{DefaultBranch: &c.Config.Target}
+	// _, _, err := c.GithubClient.GetRepo().Edit(ctx, c.Config.Owner, c.Config.Repo, editRepo)
+	// if err != nil {
+	// 	return c.exitError(fmt.Errorf("failed to update default branch: %w", err))
+	// }
+
 	c.Config.Logger.Info("Attempting to apply the $base branch protection to $target", "base", c.Config.Base, "target", c.Config.Target)
-	err = CopyBranchProtection(c.Config, c.Config.Base, c.Config.Target)
+	err := CopyBranchProtection(c, c.Config.Base, c.Config.Target)
 	if err != nil {
 		return c.exitError(err)
 	}
-
-	c.Config.Logger.Info("Success!")
 
 	return 0
 }

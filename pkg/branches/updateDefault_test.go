@@ -3,7 +3,6 @@ package branch
 import (
 	"testing"
 
-	"github.com/google/go-github/v32/github"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
@@ -12,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateBranchRun(t *testing.T) {
+func TestUpdateDefaultBranchRun(t *testing.T) {
 	ui := cli.NewMockUi()
 	client := gh.NewMockGithubInteractor()
 
@@ -27,7 +26,7 @@ func TestCreateBranchRun(t *testing.T) {
 		}),
 	}
 
-	command := &CreateCommand{
+	command := &UpdateCommand{
 		UI:           ui,
 		Config:       config,
 		GithubClient: client,
@@ -42,27 +41,8 @@ func TestCreateBranchRun(t *testing.T) {
 
 	// Make some assertions about the UI output
 	output := ui.OutputWriter.String()
-	assert.Contains(t, output, "Creating new branch main off of master")
-	assert.Contains(t, output, "Creating new temp branch update-ci-references off of master")
-	assert.Contains(t, output, "Success!")
+	assert.Contains(t, output, "Removing branch protection from the old default branch: branch=master")
+	assert.Contains(t, output, "Attempting to delete branch: branch=master")
+	assert.Contains(t, output, "Success! branch has been deleted: branch=master ref=refs/heads/master")
 
-	// Make some assertions about what we wrote to GitHub
-	created := client.CreatedReferences
-	assert.Len(t, created, 2)
-
-	want := []*github.Reference{
-		{
-			Ref:    github.String("refs/heads/main"),
-			Object: &github.GitObject{SHA: &client.MasterRef},
-		},
-		{
-			Ref:    github.String("refs/heads/update-ci-references"),
-			Object: &github.GitObject{SHA: &client.MasterRef},
-		},
-	}
-
-	for i, c := range created {
-		assert.Equal(t, want[i].GetRef(), c.GetRef())
-		assert.Equal(t, want[i].Object.GetSHA(), c.Object.GetSHA())
-	}
 }

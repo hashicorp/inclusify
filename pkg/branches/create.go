@@ -2,11 +2,11 @@ package branch
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"time"
 
 	"github.com/google/go-github/v32/github"
+	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/mitchellh/cli"
 
 	"github.com/hashicorp/inclusify/pkg/gh"
@@ -16,30 +16,24 @@ import (
 // GitHub branches in the remote repo
 type CreateCommand struct {
 	UI           cli.Ui
+	Config       *config.Config
 	GithubClient gh.GithubInteractor
-
-	Owner, Repo  string
-	base, target string
 }
 
 // Create a branch called $target from the head commit of $base
 // The $base branch must already exist
 // Example: Create a branch 'main' off of 'master'
-func (c *CreateCommand) createBranch(branch string) error {
-	// Get base Ref
-	refName := fmt.Sprintf("refs/heads/%s", c.base)
+func CreateBranch(c *CreateCommand, branch string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	ref, _, err := c.GithubClient.GetGit().GetRef(ctx, c.Owner, c.Repo, refName)
+	refName := fmt.Sprintf("refs/heads/%s", c.Config.Base)
+	ref, _, err := c.GithubClient.GetGit().GetRef(ctx, c.Config.Owner, c.Config.Repo, refName)
 	if err != nil {
 		return fmt.Errorf("call to get master ref returned error: %w", err)
 	}
-
-	// Get base SHA
 	sha := ref.Object.GetSHA()
 
-	// Setup to create a new ref called $target off of $base
 	targetRef := fmt.Sprintf("refs/heads/%s", branch)
 	targetRefObj := &github.Reference{
 		Ref: &targetRef,
@@ -48,8 +42,7 @@ func (c *CreateCommand) createBranch(branch string) error {
 		},
 	}
 
-	// Create $target ref
-	_, _, err = c.GithubClient.GetGit().CreateRef(ctx, c.Owner, c.Repo, targetRefObj)
+	_, _, err = c.GithubClient.GetGit().CreateRef(ctx, c.Config.Owner, c.Config.Repo, targetRefObj)
 	if err != nil {
 		return fmt.Errorf("call to create base ref returned error: %w", err)
 	}
@@ -61,33 +54,19 @@ func (c *CreateCommand) createBranch(branch string) error {
 // It also creates a $tmpBranch that will be used for CI changes
 // Example: Create branches 'main' and 'update-ci-references' off of master
 func (c *CreateCommand) Run(args []string) int {
-	// flag parsin'
-	fs := flag.NewFlagSet("create", flag.ExitOnError)
-
-	fs.StringVar(&c.target, "target", c.target, "")
-	fs.StringVar(&c.base, "base", c.base, "")
-
-	if err := fs.Parse(args); err != nil {
-		return c.exitError(fmt.Errorf("error parsing command line flags: %w", err))
-	}
-
-	// Create branch $target off of head commit in $base
 	c.UI.Info(fmt.Sprintf(
-		"Creating new branch %s off of %s", c.target, c.base,
+		"Creating new branch %s off of %s", c.Config.Target, c.Config.Base,
 	))
-	err := c.createBranch(c.target)
+	err := CreateBranch(c, c.Config.Target)
 	if err != nil {
 		return c.exitError(err)
 	}
 
-	// Create $tmpBranch off of head commit in $target
-	// CI changes will be pushed to the $tmpBranch and a PR will be opened
-	// to merge those changes into $target
 	tmpBranch := "update-ci-references"
 	c.UI.Info(fmt.Sprintf(
-		"Creating new temp branch %s off of %s", tmpBranch, c.base,
+		"Creating new temp branch %s off of %s", tmpBranch, c.Config.Base,
 	))
-	err = c.createBranch(tmpBranch)
+	err = CreateBranch(c, tmpBranch)
 	if err != nil {
 		return c.exitError(err)
 	}

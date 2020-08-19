@@ -1,15 +1,21 @@
 package branch
 
 import (
+	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/mitchellh/cli"
 )
 
 // DeleteCommand is a struct used to configure a Command for deleting the
 // GitHub branch, $base, in the remote repo
 type DeleteCommand struct {
-	Config *gh.GitHub
+	UI           cli.Ui
+	Config       *config.Config
+	GithubClient gh.GithubInteractor
 }
 
 // Run removes the branch protection from the $base branch
@@ -17,22 +23,23 @@ type DeleteCommand struct {
 // $base defaults to "master" if no $base flag or env var is provided
 // Example: Delete the 'master' branch
 func (c *DeleteCommand) Run(args []string) int {
-	// Remove the branch protection from the old base
-	c.Config.Logger.Info("Removing branch protection from the old default branch, $base", "base", c.Config.Base)
-	_, err := c.Config.Client.Repositories.RemoveBranchProtection(c.Config.Ctx, c.Config.Owner, c.Config.Repo, c.Config.Base)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	c.Config.Logger.Info("Removing branch protection from the old default branch", "branch", c.Config.Base)
+	_, err := c.GithubClient.GetRepo().RemoveBranchProtection(ctx, c.Config.Owner, c.Config.Repo, c.Config.Base)
 	if err != nil {
 		return c.exitError(err)
 	}
 
-	// Delete the old base branch from GitHub
 	c.Config.Logger.Info("Attempting to delete branch", "branch", c.Config.Base)
 	refName := fmt.Sprintf("refs/heads/%s", c.Config.Base)
-	_, err = c.Config.Client.Git.DeleteRef(c.Config.Ctx, c.Config.Owner, c.Config.Repo, refName)
+	_, err = c.GithubClient.GetGit().DeleteRef(ctx, c.Config.Owner, c.Config.Repo, refName)
 	if err != nil {
 		return c.exitError(fmt.Errorf("failed to delete ref: %w", err))
 	}
 
-	c.Config.Logger.Info("Success! $branch has been deleted", "branch", c.Config.Base, "ref", refName)
+	c.Config.Logger.Info("Success! branch has been deleted", "branch", c.Config.Base, "ref", refName)
 
 	return 0
 }
