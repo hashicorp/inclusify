@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:experimental
-FROM golang:1.14.6 as builder
+FROM golang:1.15.2 as builder
 
 ENV GOBIN=/go/bin
 ENV CGO_ENABLED=0
@@ -13,6 +13,7 @@ COPY go.sum go.sum
 
 # Download Go modules
 RUN go mod download
+RUN apt-get update
 
 COPY ./ .
 RUN go build -ldflags "" -o inclusify ./cmd/inclusify

@@ -1,4 +1,4 @@
-# inclusify
+# inclusify [![CI Status](https://circleci.com/gh/hashicorp/inclusify.svg?style=svg&circle-token=0ae7a4e49ff1f990f45536f92c62dab322f13113)](https://circleci.com/gh/hashicorp/inclusify/tree/master)
 
 Inclusify is a CLI that will rename the default branch of any GitHub repo and perform the other necessary tasks that go along with it. 
 
@@ -7,7 +7,7 @@ Usage: inclusify [--version] [--help] <command> [<args>]
 
 Available commands are:
     createBranches    Create new branches on GitHub. [subcommand]
-    deleteBase        Delete repo's base branch. [subcommand]
+    deleteBranches    Delete repo's base branch and other auto-created branches. [subcommand]
     updateCI          Update all CI *.y{a]ml references. [subcommand]
     updateDefault     Update repo's default branch. [subcommand]
     updatePulls       Update base branch of open PR's. [subcommand]
@@ -61,14 +61,26 @@ Continue with the below commands to update the base branch of the repo's open PR
 ./inclusify updateDefault
 ```
 
-After verifying everything is working properly, delete the old base branch. This defaults to `master`. If the `master` branch is protected, you'll get an error. Remove the protection in the UI and re-run the command again. 
+After verifying everything is working properly, delete the old base branch, which defaults to `master`. If the `master` branch is protected, the protection will be removed automatically, and then the branch will be deleted.  This will also delete the `update-ci-references` branch that was created earlier. 
 ```
-./inclusify deleteBase
+./inclusify deleteBranches
 ```
+
+## Testing
+
+To run tests locally, set the following environment variables, then use `go test ./...` or `gotestsum`:
+
+```
+export INCLUSIFY_OWNER=$owner
+export INCLUSIFY_REPO=$repo
+export INCLUSIFY_TOKEN=$github_personal_access_token
+```
+
+The integration tests will run after the unit tests by default, and these tests will create/delete real resources on the GitHub repo. Make sure the repo has a 'master' branch before running the tests. These tests also run in CI on every push, and run against the `hashicorp/inclusify-tests` repo. 
 
 ## Docker
 
-The Dockerfile is located in `build/package/docker`. Build with the following command:
+The Dockerfile is located in `build/package/docker` and is available on the `hashicorpdev` dockerhub account. Build locally with the following command:
 
 ```
 docker build -f build/package/docker/Dockerfile -t inclusify .

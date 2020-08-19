@@ -1,4 +1,5 @@
-.env
+.env*
 inclusify
 .DS_Store
 tmp-clone-*
+coverage.txt

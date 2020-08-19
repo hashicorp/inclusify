@@ -1,0 +1,93 @@
+version: 2.1
+
+references:
+  images: 
+    go: &GOLANG_IMAGE cimg/go:1.14.4
+    base: &CI_BASE cimg/base:2020.09
+    lint: &GOLANG_LINTER_IMAGE golangci/golangci-lint:v1.28.1-alpine
+
+jobs:
+  go-test:
+    docker:
+      - image: *GOLANG_IMAGE
+    steps:
+      - checkout
+      - run:
+          name: go tests
+          command: |
+            mkdir -p /tmp/test-results
+            gotestsum \
+              --junitfile /tmp/test-results/gotestsum-report.xml \
+              -- -cover -coverprofile=coverage.txt ./...
+      - store_test_results:
+          path: /tmp/test-results
+      - run: 
+          name: codecov upload
+          command: bash <(curl -s https://codecov.io/bash) -C "$CIRCLE_SHA1"
+          when: always
+  go-lint:
+    docker:
+      - image: *GOLANG_LINTER_IMAGE
+    steps:
+      - checkout
+      - run:
+          name: go linter
+          command: |
+            golangci-lint run
+  docker-build:
+    docker:
+      - image: *CI_BASE
+    resource_class: large
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 19.03.12
+      - run:
+          name: Docker Build
+          command: |
+            export DOCKER_BUILDKIT=1
+            docker build --progress=plain \
+              --tag "${CIRCLE_WORKFLOW_ID}" \
+              --file build/package/docker/Dockerfile \
+              .
+            docker save "${CIRCLE_WORKFLOW_ID}" | gzip > inclusify.tar.gz
+      - persist_to_workspace:
+          root: "."
+          paths:
+            - inclusify.tar.gz
+  docker-push:
+    docker:
+      - image: *CI_BASE
+    steps:
+      - attach_workspace:
+          at: "."
+      - setup_remote_docker:
+          version: 19.03.12
+      - run:
+          name: Reload Docker Image
+          command: |
+            docker load < inclusify.tar.gz
+      - run:
+          name: Push Docker Image
+          command: |
+            version="$(docker run "${CIRCLE_WORKFLOW_ID}" inclusify --version)"
+            docker tag "${CIRCLE_WORKFLOW_ID}" "hashicorpdev/inclusify:${version}"
+            echo "$DOCKERHUB_PASSWORD" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+            docker push "hashicorpdev/inclusify:${version}"
+
+workflows:
+  version: 2
+  validate:
+    jobs:
+      - go-test
+      - go-lint
+      - docker-build
+      - docker-push:
+          requires:
+            - go-test
+            - go-lint
+            - docker-build
+          filters:
+            branches:
+              only:
+                - master

@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateBranchRun(t *testing.T) {
+func TestDeleteBranchesRun(t *testing.T) {
 	ui := cli.NewMockUi()
 	client := gh.NewMockGithubInteractor()
-	branches := []string{"main", "update-ci-references"}
+	branches := []string{"master"}
 
 	config := &config.Config{
 		Owner:  "hashicorp",
@@ -27,10 +27,9 @@ func TestCreateBranchRun(t *testing.T) {
 		}),
 	}
 
-	command := &CreateCommand{
+	command := &DeleteCommand{
 		Config:       config,
 		GithubClient: client,
-		BaseBranch:   "master",
 		BranchesList: branches,
 	}
 
@@ -43,7 +42,7 @@ func TestCreateBranchRun(t *testing.T) {
 
 	// Make some assertions about the UI output
 	output := ui.OutputWriter.String()
-	assert.Contains(t, output, "Creating new branch update-ci-references off of master")
-	assert.Contains(t, output, "Creating new branch main off of master")
-	assert.Contains(t, output, "Success!")
+	assert.Contains(t, output, "Attempting to remove branch protection from branch: branch=master")
+	assert.Contains(t, output, "Attempting to delete branch: branch=master")
+	assert.Contains(t, output, "Success! branch has been deleted: branch=master ref=refs/heads/master")
 }
