@@ -22,7 +22,7 @@ type UpdateCommand struct {
 }
 
 // SetupBranchProtectionReq sets up the branch protection request
-func SetupBranchProtectionReq(c *UpdateCommand, base *github.Protection) (*github.ProtectionRequest, error) {
+func SetupBranchProtectionReq(c *UpdateCommand, base *github.Protection) *github.ProtectionRequest {
 	enforceUsers := userStrings(base.RequiredPullRequestReviews.DismissalRestrictions.Users)
 	enforceTeams := teamStrings(base.RequiredPullRequestReviews.DismissalRestrictions.Teams)
 	enforceReq := &github.PullRequestReviewsEnforcementRequest{
@@ -50,7 +50,7 @@ func SetupBranchProtectionReq(c *UpdateCommand, base *github.Protection) (*githu
 		AllowForcePushes:           &base.AllowForcePushes.Enabled,
 		AllowDeletions:             &base.AllowDeletions.Enabled,
 	}
-	return req, nil
+	return req
 }
 
 func userStrings(users []*github.User) []string {
