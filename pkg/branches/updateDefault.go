@@ -56,6 +56,7 @@ func createRequiredPullRequestReviewEnforcementRequest(rp *github.PullRequestRev
 	}
 	enforceUsers := userStrings(rp.DismissalRestrictions.Users)
 	enforceTeams := teamStrings(rp.DismissalRestrictions.Teams)
+  
 	enforceReq := &github.PullRequestReviewsEnforcementRequest{
 		DismissalRestrictionsRequest: &github.DismissalRestrictionsRequest{
 			Users: &enforceUsers,
@@ -72,7 +73,7 @@ func createRequiredPullRequestReviewEnforcementRequest(rp *github.PullRequestRev
 func userStrings(users []*github.User) []string {
 	out := make([]string, len(users))
 	for i, u := range users {
-		out[i] = u.GetName()
+		out[i] = u.GetLogin()
 	}
 	return out
 }
@@ -80,7 +81,7 @@ func userStrings(users []*github.User) []string {
 func teamStrings(teams []*github.Team) []string {
 	out := make([]string, len(teams))
 	for i, t := range teams {
-		out[i] = t.GetName()
+		out[i] = t.GetSlug()
 	}
 	return out
 }
@@ -88,7 +89,7 @@ func teamStrings(teams []*github.Team) []string {
 func appStrings(apps []*github.App) []string {
 	out := make([]string, len(apps))
 	for i, a := range apps {
-		out[i] = a.GetName()
+		out[i] = a.GetSlug()
 	}
 	return out
 }
@@ -127,15 +128,15 @@ func CopyBranchProtection(c *UpdateCommand, base string, target string) (err err
 // and copies the branch protection rules from $base to $target
 // Example: Update the repo's default branch from 'master' to 'main'
 func (c *UpdateCommand) Run(args []string) int {
-	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// c.Config.Logger.Info("Updating the default branch in $repo from $base to $target", "repo", c.Config.Repo, "base", c.Config.Base, "target", c.Config.Target)
-	// editRepo := &github.Repository{DefaultBranch: &c.Config.Target}
-	// _, _, err := c.GithubClient.GetRepo().Edit(ctx, c.Config.Owner, c.Config.Repo, editRepo)
-	// if err != nil {
-	// 	return c.exitError(fmt.Errorf("failed to update default branch: %w", err))
-	// }
+	c.Config.Logger.Info("Updating the default branch in $repo from $base to $target", "repo", c.Config.Repo, "base", c.Config.Base, "target", c.Config.Target)
+	editRepo := &github.Repository{DefaultBranch: &c.Config.Target}
+	_, _, err := c.GithubClient.GetRepo().Edit(ctx, c.Config.Owner, c.Config.Repo, editRepo)
+	if err != nil {
+		return c.exitError(fmt.Errorf("failed to update default branch: %w", err))
+	}
 
 	c.Config.Logger.Info("Attempting to apply the $base branch protection to $target", "base", c.Config.Base, "target", c.Config.Target)
 	err := CopyBranchProtection(c, c.Config.Base, c.Config.Target)
