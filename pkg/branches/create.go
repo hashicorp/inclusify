@@ -19,48 +19,36 @@ type CreateCommand struct {
 	BranchesList []string
 }
 
-// CreateBranch creates a branch called $target from the head commit of $base
-// The $base branch must already exist
-// Example: Create a branch 'main' off of 'master'
-func CreateBranch(c *CreateCommand, branch string, base string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	refName := fmt.Sprintf("refs/heads/%s", base)
-	ref, _, err := c.GithubClient.GetGit().GetRef(ctx, c.Config.Owner, c.Config.Repo, refName)
-	if err != nil {
-		return fmt.Errorf("call to get master ref returned error: %w", err)
-	}
-	sha := ref.Object.GetSHA()
-
-	targetRef := fmt.Sprintf("refs/heads/%s", branch)
-	targetRefObj := &github.Reference{
-		Ref: &targetRef,
-		Object: &github.GitObject{
-			SHA: &sha,
-		},
-	}
-
-	_, _, err = c.GithubClient.GetGit().CreateRef(ctx, c.Config.Owner, c.Config.Repo, targetRefObj)
-	if err != nil {
-		return fmt.Errorf("call to create base ref returned error: %w", err)
-	}
-
-	return nil
-}
-
 // Run creates the branch $target off of $base
 // It also creates a $tmpBranch that will be used for CI changes
 // Example: Create branches 'main' and 'update-ci-references' off of master
 func (c *CreateCommand) Run(args []string) int {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	c.BranchesList = append(c.BranchesList, c.Config.Target)
-	for _, b := range c.BranchesList {
+	for _, branch := range c.BranchesList {
 		c.Config.Logger.Info(fmt.Sprintf(
-			"Creating new branch %s off of %s", b, c.Config.Base,
+			"Creating new branch %s off of %s", branch, c.Config.Base,
 		))
-		err := CreateBranch(c, b, c.Config.Base)
+		refName := fmt.Sprintf("refs/heads/%s", c.Config.Base)
+		ref, _, err := c.GithubClient.GetGit().GetRef(ctx, c.Config.Owner, c.Config.Repo, refName)
 		if err != nil {
-			return c.exitError(err)
+			return c.exitError(fmt.Errorf("call to get master ref returned error: %w", err))
+		}
+
+		sha := ref.Object.GetSHA()
+		targetRef := fmt.Sprintf("refs/heads/%s", branch)
+		targetRefObj := &github.Reference{
+			Ref: &targetRef,
+			Object: &github.GitObject{
+				SHA: &sha,
+			},
+		}
+
+		_, _, err = c.GithubClient.GetGit().CreateRef(ctx, c.Config.Owner, c.Config.Repo, targetRefObj)
+		if err != nil {
+			return c.exitError(fmt.Errorf("call to create base ref returned error: %w", err))
 		}
 	}
 
