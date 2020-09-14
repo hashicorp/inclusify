@@ -26,10 +26,10 @@ jobs:
           name: Run integration tests
           command: |
             mkdir -p /tmp/test-results
-            gotestsum \
+            gotestsum  \
               --junitfile /tmp/test-results/gotestsum-report.xml \
-              --tags=integration \
-              -- -cover -coverprofile=coverage-integration.txt ./...
+              -- -cover -coverprofile=coverage-integration.txt ./... \
+              --tags=integration
       - store_test_results:
           path: /tmp/test-results
       - codecov/upload:
