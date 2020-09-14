@@ -25,6 +25,7 @@ func (c *DeleteCommand) Run(args []string) int {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	c.BranchesList = append(c.BranchesList, c.Config.Base)
 	for _, branch := range c.BranchesList {
 		c.Config.Logger.Info("Attempting to remove branch protection from branch", "branch", branch)
 		_, err := c.GithubClient.GetRepo().RemoveBranchProtection(ctx, c.Config.Owner, c.Config.Repo, branch)

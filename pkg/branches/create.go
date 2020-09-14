@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/go-github/v32/github"
-	"github.com/hashicorp/inclusify/pkg/config"
 
+	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
 )
 
@@ -16,7 +16,6 @@ import (
 type CreateCommand struct {
 	Config       *config.Config
 	GithubClient gh.GithubInteractor
-	BaseBranch   string
 	BranchesList []string
 }
 
@@ -54,11 +53,12 @@ func CreateBranch(c *CreateCommand, branch string, base string) error {
 // It also creates a $tmpBranch that will be used for CI changes
 // Example: Create branches 'main' and 'update-ci-references' off of master
 func (c *CreateCommand) Run(args []string) int {
+	c.BranchesList = append(c.BranchesList, c.Config.Target)
 	for _, b := range c.BranchesList {
 		c.Config.Logger.Info(fmt.Sprintf(
-			"Creating new branch %s off of %s", b, c.BaseBranch,
+			"Creating new branch %s off of %s", b, c.Config.Base,
 		))
-		err := CreateBranch(c, b, c.BaseBranch)
+		err := CreateBranch(c, b, c.Config.Base)
 		if err != nil {
 			return c.exitError(err)
 		}

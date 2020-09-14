@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v32/github"
+
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
 )

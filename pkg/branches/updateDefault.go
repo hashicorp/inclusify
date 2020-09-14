@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/go-github/v32/github"
+
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
-
-	github "github.com/google/go-github/v32/github"
 )
 
 // UpdateCommand is a struct used to configure a Command for updating

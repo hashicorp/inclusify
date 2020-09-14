@@ -4,14 +4,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/hashicorp/inclusify/pkg/version"
 	"github.com/mitchellh/cli"
 
-	branches "github.com/hashicorp/inclusify/pkg/branches"
-	config "github.com/hashicorp/inclusify/pkg/config"
-	files "github.com/hashicorp/inclusify/pkg/files"
-	gh "github.com/hashicorp/inclusify/pkg/gh"
-	pulls "github.com/hashicorp/inclusify/pkg/pulls"
+	"github.com/hashicorp/inclusify/pkg/branches"
+	"github.com/hashicorp/inclusify/pkg/config"
+	"github.com/hashicorp/inclusify/pkg/files"
+	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/pulls"
+	"github.com/hashicorp/inclusify/pkg/version"
 )
 
 func main() {
@@ -32,6 +32,7 @@ func inner() error {
 	c.HelpWriter = os.Stdout
 	c.ErrorWriter = os.Stderr
 	c.Args = os.Args[1:]
+	client := &gh.BaseGithubInteractor{}
 
 	// Parse and validate cmd line flags and env vars
 	cf, err := config.ParseAndValidate(c.Args, ui)
@@ -39,15 +40,17 @@ func inner() error {
 		return err
 	}
 
-	client, err := gh.NewBaseGithubInteractor(cf.Token)
-	if err != nil {
-		return err
+	if cf != nil {
+		client, err = gh.NewBaseGithubInteractor(cf.Token)
+		if err != nil {
+			return err
+		}
 	}
 
 	tmpBranch := "update-ci-references"
 	c.Commands = map[string]cli.CommandFactory{
 		"createBranches": func() (cli.Command, error) {
-			return &branches.CreateCommand{Config: cf, GithubClient: client, BaseBranch: cf.Base, BranchesList: []string{tmpBranch, cf.Target}}, nil
+			return &branches.CreateCommand{Config: cf, GithubClient: client, BranchesList: []string{tmpBranch}}, nil
 		},
 		"updateCI": func() (cli.Command, error) {
 			return &files.UpdateCICommand{Config: cf, GithubClient: client, TempBranch: tmpBranch}, nil
@@ -59,15 +62,14 @@ func inner() error {
 			return &branches.UpdateCommand{Config: cf, GithubClient: client}, nil
 		},
 		"deleteBranches": func() (cli.Command, error) {
-			return &branches.DeleteCommand{Config: cf, GithubClient: client, BranchesList: []string{tmpBranch, cf.Base}}, nil
+			return &branches.DeleteCommand{Config: cf, GithubClient: client, BranchesList: []string{tmpBranch}}, nil
 		},
 	}
 
-	exitStatus, err := c.Run()
+	_, err = c.Run()
 	if err != nil {
 		return err
 	}
 
-	os.Exit(exitStatus)
 	return nil
 }

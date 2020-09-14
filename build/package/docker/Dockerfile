@@ -13,7 +13,6 @@ COPY go.sum go.sum
 
 # Download Go modules
 RUN go mod download
-RUN apt-get update
 
 COPY ./ .
 RUN go build -ldflags "" -o inclusify ./cmd/inclusify

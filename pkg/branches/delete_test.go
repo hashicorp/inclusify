@@ -1,14 +1,17 @@
+// +build !integration
+
 package branches
 
 import (
 	"testing"
 
 	hclog "github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/inclusify/pkg/config"
-	"github.com/hashicorp/inclusify/pkg/gh"
 	"github.com/mitchellh/cli"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hashicorp/inclusify/pkg/config"
+	"github.com/hashicorp/inclusify/pkg/gh"
 )
 
 func TestDeleteBranchesRun(t *testing.T) {

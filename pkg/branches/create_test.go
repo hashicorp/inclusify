@@ -1,20 +1,24 @@
+// +build !integration
+
 package branches
 
 import (
 	"testing"
 
+	"github.com/google/go-github/github"
 	hclog "github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/inclusify/pkg/config"
-	"github.com/hashicorp/inclusify/pkg/gh"
 	"github.com/mitchellh/cli"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hashicorp/inclusify/pkg/config"
+	"github.com/hashicorp/inclusify/pkg/gh"
 )
 
 func TestCreateBranchRun(t *testing.T) {
 	ui := cli.NewMockUi()
 	client := gh.NewMockGithubInteractor()
-	branches := []string{"main", "update-ci-references"}
+	branches := []string{"update-ci-references"}
 
 	config := &config.Config{
 		Owner:  "hashicorp",
@@ -30,7 +34,6 @@ func TestCreateBranchRun(t *testing.T) {
 	command := &CreateCommand{
 		Config:       config,
 		GithubClient: client,
-		BaseBranch:   "master",
 		BranchesList: branches,
 	}
 
@@ -46,4 +49,24 @@ func TestCreateBranchRun(t *testing.T) {
 	assert.Contains(t, output, "Creating new branch update-ci-references off of master")
 	assert.Contains(t, output, "Creating new branch main off of master")
 	assert.Contains(t, output, "Success!")
+
+	// Make some assertions about what we wrote to GitHub
+	created := client.CreatedReferences
+	assert.Len(t, created, 2)
+
+	want := []*github.Reference{
+		{
+			Ref:    github.String("refs/heads/update-ci-references"),
+			Object: &github.GitObject{SHA: &client.MasterRef},
+		},
+		{
+			Ref:    github.String("refs/heads/main"),
+			Object: &github.GitObject{SHA: &client.MasterRef},
+		},
+	}
+
+	for i, c := range created {
+		assert.Equal(t, want[i].GetRef(), c.GetRef())
+		assert.Equal(t, want[i].Object.GetSHA(), c.Object.GetSHA())
+	}
 }

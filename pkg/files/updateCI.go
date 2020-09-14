@@ -10,14 +10,14 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
-	"github.com/google/go-github/v32/github"
-	"github.com/hashicorp/inclusify/pkg/config"
-	"github.com/hashicorp/inclusify/pkg/gh"
-
 	git "github.com/go-git/go-git/v5"
 	plumbing "github.com/go-git/go-git/v5/plumbing"
 	object "github.com/go-git/go-git/v5/plumbing/object"
 	http "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/google/go-github/v32/github"
+
+	"github.com/hashicorp/inclusify/pkg/config"
+	"github.com/hashicorp/inclusify/pkg/gh"
 )
 
 // UpdateCICommand is a struct used to configure a Command for updating

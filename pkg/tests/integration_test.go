@@ -1,3 +1,5 @@
+// +build integration
+
 package tests
 
 import (
@@ -9,12 +11,14 @@ import (
 	"testing"
 
 	"github.com/dchest/uniuri"
+	"github.com/mitchellh/cli"
+
 	"github.com/hashicorp/inclusify/pkg/branches"
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/files"
 	"github.com/hashicorp/inclusify/pkg/gh"
 	"github.com/hashicorp/inclusify/pkg/pulls"
-	"github.com/mitchellh/cli"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,15 +40,27 @@ type Inputs struct {
 }
 
 // SetVals sets test config values that will be used in all integration tests
-func (i *Inputs) SetVals() {
-	i.owner = os.Getenv("INCLUSIFY_OWNER")
-	i.repo = os.Getenv("INCLUSIFY_REPO")
-	i.token = os.Getenv("INCLUSIFY_TOKEN")
+func (i *Inputs) SetVals(t *testing.T) {
+	owner, exists := os.LookupEnv("INCLUSIFY_OWNER")
+	if exists != true {
+		t.Errorf("Cannot find the required env var INCLUSIFY_OWNER")
+	}
+	repo, exists := os.LookupEnv("INCLUSIFY_REPO")
+	if exists != true {
+		t.Errorf("Cannot find the required env var INCLUSIFY_REPO")
+	}
+	token, exists := os.LookupEnv("INCLUSIFY_TOKEN")
+	if exists != true {
+		t.Errorf("Cannot find the required env var INCLUSIFY_TOKEN")
+	}
+	i.owner = owner
+	i.repo = repo
+	i.token = token
 	i.base = fmt.Sprintf("master-clone-%s", uniuri.NewLen(8))
 	i.target = fmt.Sprintf("main-%s", uniuri.NewLen(8))
 	i.temp = fmt.Sprintf("update-ci-references-%s", uniuri.NewLen(8))
 	i.random = fmt.Sprintf("my-fancy-branch-%s", uniuri.NewLen(8))
-	i.branchesList = []string{i.base, i.target, i.temp, i.random}
+	i.branchesList = []string{i.target, i.temp, i.random}
 }
 
 // SetURL receives a pointer to Inputs so it can modify the pullRequestURL field
@@ -73,75 +89,30 @@ func seq() func() {
 // TestSetTestValues sets config values to use in our integration tests
 func Test_SetTestConfigValues(t *testing.T) {
 	defer seq()()
-	i.SetVals()
+	i.SetVals(t)
 }
 
-// Test_CreateMasterClone creates a clone of master called $base, e.g. master-clone-%s
-func Test_CreateMasterClone(t *testing.T) {
-	defer seq()()
-	subcommand := ""
-	mockUI := cli.NewMockUi()
-	owner, repo, token, base, _, _, _, _ := i.GetVals()
-	branchesList := []string{base}
-	args := []string{subcommand, "--owner", owner, "--repo", repo, "--token", token}
-
-	// Parse and validate cmd line flags and env vars
-	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
-
-	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
-
-	command := &branches.CreateCommand{
-		Config:       config,
-		GithubClient: client,
-		BaseBranch:   "master",
-		BranchesList: branchesList,
-	}
-
-	exit := command.Run([]string{})
-
-	// Did we exit with a zero exit code?
-	if !assert.Equal(t, 0, exit) {
-		require.Fail(t, mockUI.ErrorWriter.String())
-	}
-
-	// Make some assertions about the UI output
-	output := mockUI.OutputWriter.String()
-	assert.Contains(t, output, fmt.Sprintf("Creating new branch %s off of %s", base, "master"))
-	assert.Contains(t, output, "Success!")
-}
-
-// Test_CreateBranches creates the update-ci-references-%s branch,
-// and the main-%s branch, off of the head of master
+// Test_CreateBranches creates the master-clone-% branch,
+// update-ci-references-%s branch, and the main-%s branch, off of the head of master
 func Test_CreateBranches(t *testing.T) {
 	defer seq()()
 	subcommand := "createBranches"
 	mockUI := cli.NewMockUi()
-	base := "master"
-	owner, repo, token, _, target, temp, random, _ := i.GetVals()
-	branchesList := []string{temp, target, random}
+	owner, repo, token, base, target, temp, random, _ := i.GetVals()
+	branchesList := []string{base, temp, random}
+	base = "master"
 	args := []string{subcommand, "--owner", owner, "--repo", repo, "--base", base, "--target", target, "--token", token}
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &branches.CreateCommand{
 		Config:       config,
 		GithubClient: client,
-		BaseBranch:   base,
 		BranchesList: branchesList,
 	}
 
@@ -157,6 +128,7 @@ func Test_CreateBranches(t *testing.T) {
 	assert.Contains(t, output, fmt.Sprintf("Creating new branch %s off of %s", branchesList[0], base))
 	assert.Contains(t, output, fmt.Sprintf("Creating new branch %s off of %s", branchesList[1], base))
 	assert.Contains(t, output, fmt.Sprintf("Creating new branch %s off of %s", branchesList[2], base))
+	assert.Contains(t, output, fmt.Sprintf("Creating new branch %s off of %s", target, base))
 	assert.Contains(t, output, "Success!")
 }
 
@@ -171,14 +143,10 @@ func Test_UpdateOpenPullRequestsNoOp(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &pulls.UpdateCommand{
 		Config:       config,
@@ -210,14 +178,10 @@ func Test_UpdateCI(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &files.UpdateCICommand{
 		Config:       config,
@@ -264,25 +228,18 @@ func Test_MergePullRequest(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	// Extract pull request number from URL
 	r, err := regexp.Compile(`[-]?\d[\d,]*[\.]?[\d{2}]*`)
-	if err != nil {
-		t.Errorf("REGEX pattern did not compile: %v", err)
-	}
+	require.NoError(t, err)
+
 	result := r.FindString(pullRequestURL)
 	prNumber, err := strconv.Atoi(result)
-	if err != nil {
-		t.Errorf("Failed to convert pull request number into an integer")
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &pulls.MergeCommand{
 		Config:       config,
@@ -314,14 +271,10 @@ func Test_CreateOpenPullRequest(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &files.UpdateCICommand{
 		Config:       config,
@@ -368,14 +321,10 @@ func Test_UpdateOpenPullRequests(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &pulls.UpdateCommand{
 		Config:       config,
@@ -408,20 +357,15 @@ func Test_CloseOpenPullRequest(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	// Extract pull request number from URL
 	r, err := regexp.Compile(`[-]?\d[\d,]*[\.]?[\d{2}]*`)
-	if err != nil {
-		t.Errorf("REGEX pattern did not compile: %v", err)
-	}
+	require.NoError(t, err)
+
 	result := r.FindString(pullRequestURL)
 	prNumber, err := strconv.Atoi(result)
-	if err != nil {
-		t.Errorf("Failed to convert pull request number into an integer")
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
 	if err != nil {
@@ -456,14 +400,10 @@ func Test_CreateBaseBranchProtection(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	c := &branches.UpdateCommand{
 		Config:       config,
@@ -471,9 +411,7 @@ func Test_CreateBaseBranchProtection(t *testing.T) {
 	}
 
 	err = branches.CopyBranchProtection(c, "master", base)
-	if err != nil {
-		t.Errorf("Failed to copy branch protection from master to %s due to error: %v", base, err)
-	}
+	require.NoError(t, err)
 
 	output := mockUI.OutputWriter.String()
 	assert.Contains(t, output, "Getting branch protection for branch: branch=master")
@@ -491,14 +429,10 @@ func Test_UpdateDefaultBranch(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &branches.UpdateCommand{
 		Config:       config,
@@ -533,14 +467,10 @@ func Test_UpdateDefaultBranchToMaster(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &branches.UpdateCommand{
 		Config:       config,
@@ -574,14 +504,10 @@ func Test_DeleteTestBranches(t *testing.T) {
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
-	if err != nil {
-		t.Errorf("Failed to create config due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	client, err := gh.NewBaseGithubInteractor(token)
-	if err != nil {
-		t.Errorf("Failed to create client due to error: %v", err)
-	}
+	require.NoError(t, err)
 
 	command := &branches.DeleteCommand{
 		Config:       config,

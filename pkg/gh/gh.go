@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	github "github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v32/github"
 	"golang.org/x/oauth2"
 )
 
@@ -45,29 +45,29 @@ type GithubRepoInteractor interface {
 // baseGithubInteractor is a concrete implementation of the GithubInteractor
 // interface. In this case, it implements the methods of this interface by
 // calling the real GitHub client.
-type baseGithubInteractor struct {
+type BaseGithubInteractor struct {
 	github *github.Client
 	repo   *github.RepositoriesService
 	pr     *github.PullRequestsService
 }
 
 // GetGit returns the GitService Client.
-func (b *baseGithubInteractor) GetGit() GithubGitInteractor {
+func (b *BaseGithubInteractor) GetGit() GithubGitInteractor {
 	return b.github.Git
 }
 
 // GetRepo returns the RepositioriesService Client.
-func (b *baseGithubInteractor) GetRepo() GithubRepoInteractor {
+func (b *BaseGithubInteractor) GetRepo() GithubRepoInteractor {
 	return b.github.Repositories
 }
 
 // GetRepo returns the PullsRequestService Client.
-func (b *baseGithubInteractor) GetPRs() GithubPRInteractor {
+func (b *BaseGithubInteractor) GetPRs() GithubPRInteractor {
 	return b.github.PullRequests
 }
 
 // NewBaseGithubInteractor is a constructor for baseGithubInteractor.
-func NewBaseGithubInteractor(token string) (*baseGithubInteractor, error) {
+func NewBaseGithubInteractor(token string) (*BaseGithubInteractor, error) {
 	if token == "" {
 		return nil, errors.New("cannot create GitHub Client with empty token")
 	}
@@ -77,7 +77,7 @@ func NewBaseGithubInteractor(token string) (*baseGithubInteractor, error) {
 	oathClient := oauth2.NewClient(ctx, oauthToken)
 	client := github.NewClient(oathClient)
 
-	return &baseGithubInteractor{
+	return &BaseGithubInteractor{
 		github: client,
 		repo:   client.Repositories,
 		pr:     client.PullRequests,
