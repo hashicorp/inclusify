@@ -32,9 +32,8 @@ jobs:
               -- -cover -coverprofile=coverage-integration.txt ./...
       - store_test_results:
           path: /tmp/test-results
-      - codecov:
-          upload:
-            when: always
+      - codecov/upload:
+          when: always
           upload_name: "$CIRCLE_SHA1"
   go-lint:
     docker:
