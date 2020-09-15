@@ -39,8 +39,8 @@ func ParseAndValidate(args []string, ui cli.Ui) (c *Config, err error) {
 	cmd, inputFlags := args[0], args[1:]
 
 	// Special check for help commands
-	// command is ./inclusify --help
-	if len(inputFlags) == 0 && (cmd == "--help" || cmd == "-help") {
+	// command is ./inclusify --help or --version
+	if len(inputFlags) == 0 && (cmd == "--help" || cmd == "-help" || cmd == "--version" || cmd == "-version") {
 		return nil, nil
 	}
 	// command is ./inclusify $subcommand --help

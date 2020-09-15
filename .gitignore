@@ -3,3 +3,4 @@ inclusify
 .DS_Store
 tmp-clone-*
 coverage.txt
+inclusify.tar.gz
