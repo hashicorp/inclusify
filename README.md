@@ -33,7 +33,7 @@ export INCLUSIFY_REPO="$repo"
 export INCLUSIFY_TOKEN="$github_personal_access_token"
 ```
 
-To run the following subcommands, the `personal_access_token` will need to be associated with a user with `write` access on the repo.
+To run the following subcommands, the `github_personal_access_token` will need to be associated with a user with `write` access on the repo.
 
 [Optional] Pass in optional flags or env vars. Defaults are shown below and in --help
 ```
