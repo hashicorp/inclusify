@@ -1,40 +1,38 @@
+name: GitHub Release
+
 on:
   push:
     branches:
       - test-github-release
     # tags:
-    #   - 'v*' # Push events to matching v*, e.g. v0.0.1, v1.0.0
+    #   - 'v[0-9]+.[0-9]+.[0-9]+*' # Push events to matching v*, e.g. v0.0.1, v1.0.0
 
-name: Create GitHub Release
 jobs:
-  create-release:
-    name: Create GitHub Release
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Build artifacts
+      - name: Setup go
         uses: actions/setup-go@v2
         with:
           go-version: '^1.15'
-      - run: go get -v github.com/mitchellh/gox
-      - run: export unbuildable_platform=\!darwin/386
-      - run: gox ./... -osarch="$unbuildable_platform"
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Install hc-codesign
+        id: codesign
+        run: |
+          docker login docker.pkg.github.com -u docker -p '${{ secrets.CODESIGN_GITHUB_TOKEN }}' && \
+          docker pull docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION && \
+          echo "::set-output name=image::docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION"
         env:
+          VERSION: v0
+      - name: Release
+        uses: goreleaser/goreleaser-action@v1
+        with:
+          version: latest
+          args: release
+        env:
+          CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          body: ${{ github.ref }}
-          draft: false
-          prerelease: false
-      - name: Upload Release Assets
-        id: upload-release-assets
-        uses: csexton/release-asset-action@v2
-        with:
-          pattern: "inclusify_*"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          release-url: ${{ steps.create_release.outputs.upload_url }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
