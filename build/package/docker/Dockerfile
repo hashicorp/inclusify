@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:experimental
-FROM golang:1.15.2 as builder
+FROM golang:1.15 as builder
 
 ENV GOBIN=/go/bin
 ENV CGO_ENABLED=0
