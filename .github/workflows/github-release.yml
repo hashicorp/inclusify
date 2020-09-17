@@ -2,10 +2,8 @@ name: GitHub Release
 
 on:
   push:
-    branches:
-      - test-goreleaser
-    # tags:
-    #   - 'v[0-9]+.[0-9]+.[0-9]+*' # Push events to matching v*, e.g. v0.0.1, v1.0.0
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
   release:
@@ -25,7 +23,7 @@ jobs:
           echo "::set-output name=image::docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION"
         env:
           VERSION: v0
-      - name: Release
+      - name: GitHub Release
         uses: goreleaser/goreleaser-action@v1
         with:
           version: latest

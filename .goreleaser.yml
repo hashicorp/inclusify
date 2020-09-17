@@ -18,13 +18,11 @@ builds:
           -v {{ dir .Path }}:/workdir
           {{ .Env.CODESIGN_IMAGE }}
           sign -product-name={{ .ProjectName }} {{ .Name }}
-    dir: ./cmd/inclusify/
   - mod_timestamp: '{{ .CommitTimestamp }}'
     targets:
       - linux_386
       - linux_amd64
       - linux_arm
-    dir: ./cmd/inclusify/
 
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
