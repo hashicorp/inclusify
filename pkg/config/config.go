@@ -34,6 +34,12 @@ func ParseAndValidate(args []string, ui cli.Ui) (c *Config, err error) {
 	flags.StringVar(&target, "target", "main", "The name of the target branch, e.g. 'main'")
 	flags.StringVar(&token, "token", "", "Your Personal GitHub Access Token")
 
+	// Special check for ./inclusify invocation without any args
+	// Return the help message
+	if len(args) == 0 {
+		args = append(args, "--help")
+	}
+
 	// Pop the subcommand into 'cmd'
 	// flags.Parse does not work when the subcommand is included
 	cmd, inputFlags := args[0], args[1:]
