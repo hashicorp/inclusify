@@ -47,7 +47,7 @@ func CloneRepo(c *UpdateCICommand) (repoRef *git.Repository, dir string, err err
 	repo, err := git.PlainClone(dir, false, &git.CloneOptions{
 		URL: url,
 		Auth: &http.BasicAuth{
-			Username: "irrelevant",
+			Username: "",
 			Password: c.Config.Token,
 		},
 		ReferenceName: plumbing.ReferenceName(refName),
