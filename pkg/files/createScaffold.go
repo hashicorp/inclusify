@@ -98,9 +98,8 @@ func GitPushCommit(c *CreateScaffoldCommand, repo *git.Repository) (err error) {
 	}
 
 	c.Config.Logger.Info("Committing changes")
-	commitMsg := fmt.Sprintf("Creating initial commit")
 	email := fmt.Sprintf("inclusive-language@%s.com", c.Config.Owner)
-	commitSha, err := worktree.Commit(commitMsg, &git.CommitOptions{
+	commitSha, err := worktree.Commit("Initial commit", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "Inclusive Language",
 			Email: email,
