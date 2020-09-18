@@ -78,7 +78,9 @@ export GOPATH=$HOME/go
 
 ## Testing
 
-To run the unit tests locally, clone the repo and run `go test ./...` or `gotestsum ./...` in the root of the directory. To run the integration tests, set the environment variables as described in step #2 above and add `--tags=integation` to the test command. These tests will create/delete real resources on the GitHub repo that you've specified. Make sure the repo has a `master` branch before running the tests. All tests are run in CI on every push, and run against the `hashicorp/inclusify-tests` repo. 
+To run the unit tests locally, clone the repo and run `go test ./...` or `gotestsum ./...` in the root of the directory. To run the integration tests, set the environment variables as described in step #2 above and add `--tags=integation` to the test command. These tests will create a new repo under the authenticated user, provision the repo, and create/delete real resources within it. Finally, the test repo will be deleted. 
+
+All tests are run in CI on every push, and run against a repo in the format `$user/inclusify-tests-$random`.
 
 ## Docker
 

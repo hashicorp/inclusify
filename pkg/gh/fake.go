@@ -119,6 +119,20 @@ func (m *MockGithubGitInteractor) DeleteRef(
 	return nil, nil
 }
 
+// Create .............................
+func (m *MockGithubRepoInteractor) Create(
+	ctx context.Context, owner string, repository *github.Repository,
+) (*github.Repository, *github.Response, error) {
+	return nil, nil, nil
+}
+
+// Delete .............................
+func (m *MockGithubRepoInteractor) Delete(
+	ctx context.Context, owner string, repo string,
+) (*github.Response, error) {
+	return nil, nil
+}
+
 // Edit .............................
 func (m *MockGithubRepoInteractor) Edit(
 	ctx context.Context, owner string, repo string, repository *github.Repository,

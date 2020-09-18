@@ -1,0 +1,16 @@
+docker:
+  - image: cimg/base:2020.01
+shell: /usr/bin/env bash -euo pipefail
+environment:
+  DEFAULT_BRANCH: master
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: mkdir master
+  - run: echo $DEFAULT_BRANCH
+  - run: echo $BRANCH
+  - persist_to_workspace:
+      root: .
+      paths:
+        - master

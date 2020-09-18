@@ -1,0 +1,18 @@
+version: 2.1
+
+references:
+  go-machine-image: &go_machine_image
+    circleci/classic:201808-01
+
+  # common references
+  common_envs: &common_envs
+    BRANCH: "master"
+
+executors:
+  go:
+    working_directory: /blah/master
+    docker:
+      - image: golang:1.14.6
+    environment:
+      <<: *common_envs
+      GOPATH: /go

@@ -36,13 +36,15 @@ type GithubPRInteractor interface {
 // GithubRepoInteractor is a more specific interface that represents a RepositoriesService
 // in GitHub. This can also be real or fake.
 type GithubRepoInteractor interface {
+	Create(ctx context.Context, owner string, repository *github.Repository) (*github.Repository, *github.Response, error)
 	Edit(ctx context.Context, owner string, repo string, repository *github.Repository) (*github.Repository, *github.Response, error)
 	RemoveBranchProtection(ctx context.Context, owner string, repo string, branch string) (*github.Response, error)
 	GetBranchProtection(ctx context.Context, owner string, repo string, branch string) (*github.Protection, *github.Response, error)
 	UpdateBranchProtection(ctx context.Context, owner string, repo string, branch string, preq *github.ProtectionRequest) (*github.Protection, *github.Response, error)
+	Delete(ctx context.Context, owner string, repo string) (*github.Response, error)
 }
 
-// baseGithubInteractor is a concrete implementation of the GithubInteractor
+// BaseGithubInteractor is a concrete implementation of the GithubInteractor
 // interface. In this case, it implements the methods of this interface by
 // calling the real GitHub client.
 type BaseGithubInteractor struct {
@@ -61,7 +63,7 @@ func (b *BaseGithubInteractor) GetRepo() GithubRepoInteractor {
 	return b.github.Repositories
 }
 
-// GetRepo returns the PullsRequestService Client.
+// GetPRs returns the PullsRequestService Client.
 func (b *BaseGithubInteractor) GetPRs() GithubPRInteractor {
 	return b.github.PullRequests
 }

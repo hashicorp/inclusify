@@ -1,0 +1,5 @@
+jobs:
+  - test:
+      filters:
+        branches:
+          ignore: master
