@@ -98,7 +98,7 @@ func GitPushCommit(c *CreateScaffoldCommand, repo *git.Repository) (err error) {
 	}
 
 	c.Config.Logger.Info("Committing changes")
-	commitMsg := fmt.Sprintf("Creating initial commit")
+	commitMsg := "Creating initial commit"
 	commitSha, err := worktree.Commit(commitMsg, &git.CommitOptions{
 		Author: &object.Signature{
 			When: time.Now(),
