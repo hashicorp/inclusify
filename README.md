@@ -33,7 +33,7 @@ export INCLUSIFY_TARGET="main" // OPTIONAL: Name of the new target base branch f
 
 4. Run the below commands in the following order:
 
-Set up the new target branch and temporary branches which will be used in the next steps, and create a PR to update all CI references from `base` to `target`.
+Set up the new target branch and temporary branches which will be used in the next steps, and create a PR to update all CI references from `base` to `target`. This happens via a simple find and replace within the root files `.goreleaser.y{a}ml`, `.travis.y{a}ml`, and within any files in the root directories `.circleci`, `.teamcity`, `.github`.
 ```
 ./inclusify createBranches
 ./inclusify updateCI 
