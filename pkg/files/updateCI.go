@@ -123,12 +123,9 @@ func GitPush(c *UpdateCICommand, tmpBranch string, repo *git.Repository) (err er
 
 	c.Config.Logger.Info("Committing changes")
 	commitMsg := fmt.Sprintf("Update CI references from %s to %s", c.Config.Base, c.Config.Target)
-	email := fmt.Sprintf("inclusive-language@%s.com", c.Config.Owner)
 	commitSha, err := worktree.Commit(commitMsg, &git.CommitOptions{
 		Author: &object.Signature{
-			Name:  "Inclusive Language",
-			Email: email,
-			When:  time.Now(),
+			When: time.Now(),
 		},
 	})
 	if err != nil {
@@ -191,7 +188,7 @@ func (c *UpdateCICommand) Run(args []string) int {
 	}
 	c.Config.Logger.Info("Retrieved HEAD commit of branch", "branch", c.TempBranch, "sha", ref.Hash())
 
-	paths := []string{".circleci", ".github", ".teamcity", ".travis.yml"}
+	paths := []string{".circleci", ".github", ".teamcity", ".travis.yml", ".travis.yaml", ".goreleaser.yml", ".goreleaser.yaml"}
 	filesChanged, err := UpdateCIReferences(c, dir, paths)
 	if err != nil {
 		return c.exitError(err)
