@@ -33,7 +33,7 @@ jobs:
            wget --version
       - name: Install maldet malware scanner
         run: |
-          wget --no-verbose -O maldet-1.6.4.tar.gz https://github.com/rfxn/linux-malware-detect/archive/1.6.4.tar.gz
+          wget --no-verbose -O maldet-$VERSION.tar.gz https://github.com/rfxn/linux-malware-detect/archive/$VERSION.tar.gz
           sha256sum -c - <<< "$SHA256SUM  maldet-$VERSION.tar.gz"
           sudo mkdir -p maldet-$VERSION
           sudo tar -xzf maldet-$VERSION.tar.gz --strip-components=1 -C maldet-$VERSION
@@ -56,10 +56,12 @@ jobs:
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
           CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
+      - name: List files
+        run: ls -la
       - name: Run clamAV antivirus scanner
-        run: sudo clamscan /dist
+        run: sudo clamscan /home/runner/work/inclusify/inclusify/dist/
       - name: Run maldet malware scanner
-        run: sudo maldet -a /dist
+        run: sudo maldet -a /home/runner/work/inclusify/inclusify/dist/
       - name: Publish released artifacts on releases.hashicorp.com
         run: hc-releases publish --product=inclusify --bucket=$STAGING_AWS_BUCKET
         env:
