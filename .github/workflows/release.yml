@@ -1,0 +1,70 @@
+name: Release
+
+# on:
+#   push:
+#     tags:
+#       - 'v[0-9]+.[0-9]+.[0-9]+*'
+on: 
+  push:
+    branches:
+      - test-release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.15'
+      - name: Install hc-codesign
+        id: codesign
+        run: |
+          docker login docker.pkg.github.com -u docker -p '${{ secrets.CODESIGN_GITHUB_TOKEN }}' && \
+          docker pull docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION && \
+          echo "::set-output name=image::docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION"
+        env:
+          VERSION: v0
+      - name: Install wget & clamAV antivirus scanner
+        run : |
+           apt-get -qq install -y ca-certificates wget clamav
+           wget --version
+           freshclam --quiet
+      - name: Install maldet malware scanner
+        run: |
+          wget --no-verbose -O maldet-1.6.4.tar.gz https://github.com/rfxn/linux-malware-detect/archive/1.6.4.tar.gz
+          sha256sum -c - <<< "$SHA256SUM  maldet-$VERSION.tar.gz"
+          mkdir -p maldet-$ERSION
+          tar -xzf maldet-$VERSION.tar.gz --strip-components=1 -C maldet-$VERSION
+          cd maldet-$VERSION
+          ./install.sh
+          maldet -u
+        env: 
+          VERSION: 1.6.4
+          SHA256SUM: 3ad66eebd443d32dd6c811dcf2d264b78678c75ed1d40c15434180d4453e60d2
+      - name: Import PGP key for archive signing
+        run: echo -e "${{ secrets.PGP_SIGNING_KEY }}" | gpg --import
+      - name: GitHub Release
+        uses: goreleaser/goreleaser-action@v1
+        with:
+          version: latest
+          args: release
+        env:
+          CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
+      - name: Run clamAV antivirus scanner
+        run: sudo clamscan /dist
+      - name: Run maldet malware scanner
+        run: sudo maldet -a /dist
+      - name: Publish released artifacts on releases.hashicorp.com
+        run: hc-releases publish --bucket=$STAGING_AWS_BUCKET
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
+          FASTLY_API_TOKEN: ${{ secrets.RELEASE_FASTLY_API_TOKEN }}
+          STAGING_AWS_BUCKET: ${{ secrets.STAGING_AWS_BUCKET }}

@@ -19,12 +19,20 @@ builds:
           {{ .Env.CODESIGN_IMAGE }}
           sign -product-name={{ .ProjectName }} {{ .Name }}
     dir: ./cmd/inclusify/
+    flags:
+      - -trimpath
+    ldflags:
+      - '-X "main.GitCommit=$(shell git rev-parse HEAD)"'
   - mod_timestamp: '{{ .CommitTimestamp }}'
     targets:
       - linux_386
       - linux_amd64
       - linux_arm
     dir: ./cmd/inclusify/
+    flags:
+      - -trimpath
+    ldflags:
+      - '-X "main.GitCommit=$(shell git rev-parse HEAD)"'
 
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
