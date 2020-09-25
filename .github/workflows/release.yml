@@ -31,7 +31,7 @@ jobs:
         run : |
            sudo apt-get -qq install -y ca-certificates wget clamav
            wget --version
-           freshclam --quiet
+           sudo freshclam --quiet
       - name: Install maldet malware scanner
         run: |
           wget --no-verbose -O maldet-1.6.4.tar.gz https://github.com/rfxn/linux-malware-detect/archive/1.6.4.tar.gz
