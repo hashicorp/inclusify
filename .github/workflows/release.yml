@@ -37,7 +37,7 @@ jobs:
           sha256sum -c - <<< "$SHA256SUM  maldet-$VERSION.tar.gz"
           sudo mkdir -p maldet-$VERSION
           sudo tar -xzf maldet-$VERSION.tar.gz --strip-components=1 -C maldet-$VERSION
-          sudo cd maldet-$VERSION
+          cd maldet-$VERSION
           sudo ./install.sh
           sudo maldet -u
         env: 
