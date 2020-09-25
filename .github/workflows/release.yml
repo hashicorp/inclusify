@@ -27,6 +27,18 @@ jobs:
           echo "::set-output name=image::docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION"
         env:
           VERSION: v0
+      - name: Install hc-releases
+        run: |
+          DOWNLOAD_URL=$(curl -SsL \
+            -H "Authorization: token ${{ secrets.CODESIGN_GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            | jq -r '.assets[] | select(.name | contains("linux_amd64.tgz")) | .url')
+          curl -SsL -o /tmp/hc-releases.tgz \
+            -H "Authorization: token ${{ secrets.CODESIGN_GITHUB_TOKEN }}" \
+            -H "Accept: application/octet-stream" ${DOWNLOAD_URL}
+          tar xzf /tmp/hc-releases.tgz
+          sudo mv hc-releases /usr/bin/hc-releases
+          hc-releases version
       - name: Install wget & clamAV antivirus scanner
         run : |
            sudo apt-get -qq install -y ca-certificates wget clamav
@@ -56,14 +68,12 @@ jobs:
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
           CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
-      - name: List files
-        run: ls -la
       - name: Run clamAV antivirus scanner
-        run: sudo clamscan /home/runner/work/inclusify/inclusify/dist/
+        run: sudo clamscan /home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/dist/
       - name: Run maldet malware scanner
-        run: sudo maldet -a /home/runner/work/inclusify/inclusify/dist/
+        run: sudo maldet -a /home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/dist/
       - name: Publish released artifacts on releases.hashicorp.com
-        run: hc-releases publish --product=inclusify --bucket=$STAGING_AWS_BUCKET
+        run: hc-releases publish --product=${{ github.event.repository.name }} --bucket=$STAGING_AWS_BUCKET
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
