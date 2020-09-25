@@ -32,6 +32,7 @@ jobs:
           DOWNLOAD_URL=$(curl -SsL \
             -H "Authorization: token ${{ secrets.CODESIGN_GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/hashicorp/hc-releases/releases/latest \
             | jq -r '.assets[] | select(.name | contains("linux_amd64.tgz")) | .url')
           curl -SsL -o /tmp/hc-releases.tgz \
             -H "Authorization: token ${{ secrets.CODESIGN_GITHUB_TOKEN }}" \
