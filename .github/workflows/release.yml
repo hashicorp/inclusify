@@ -29,7 +29,7 @@ jobs:
           VERSION: v0
       - name: Install wget & clamAV antivirus scanner
         run : |
-           apt-get -qq install -y ca-certificates wget clamav
+           sudo apt-get -qq install -y ca-certificates wget clamav
            wget --version
            freshclam --quiet
       - name: Install maldet malware scanner
@@ -62,7 +62,7 @@ jobs:
       - name: Run maldet malware scanner
         run: sudo maldet -a /dist
       - name: Publish released artifacts on releases.hashicorp.com
-        run: hc-releases publish --bucket=$STAGING_AWS_BUCKET
+        run: hc-releases publish --product=inclusify --bucket=$STAGING_AWS_BUCKET
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
