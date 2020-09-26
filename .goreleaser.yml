@@ -27,7 +27,6 @@ builds:
     targets:
       - linux_386
       - linux_amd64
-      - linux_arm
     dir: ./cmd/inclusify/
     flags:
       - -trimpath
