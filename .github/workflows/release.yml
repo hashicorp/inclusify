@@ -1,13 +1,9 @@
 name: Release
 
-# on:
-#   push:
-#     tags:
-#       - 'v[0-9]+.[0-9]+.[0-9]+*'
-on: 
+on:
   push:
-    branches:
-      - test-release
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
   release:
@@ -84,7 +80,7 @@ jobs:
         run: sudo maldet -a /home/runner/work/$REPO/$REPO/dist/
         env:
           REPO: ${{ github.event.repository.name }}
-      - name: Publish released artifacts on releases.hashicorp.com
+      - name: Publish released artifacts in the staging S3 bucket
         run: hc-releases publish --bucket=$RELEASES_AWS_BUCKET
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
