@@ -14,5 +14,4 @@ require (
 	github.com/otiai10/copy v1.2.0
 	github.com/stretchr/testify v1.6.1
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	mvdan.cc/xurls/v2 v2.2.0
 )
