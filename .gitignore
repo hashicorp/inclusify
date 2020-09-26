@@ -4,3 +4,4 @@ inclusify
 tmp-clone-*
 coverage.txt
 inclusify*
+dist/

@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/go-git/go-git/v5 v5.1.0
+	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v32 v32.1.0
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-version v1.2.1
