@@ -65,7 +65,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v1
         with:
           version: latest
-          args: release
+          args: release --skip-validate
         env:
           PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
