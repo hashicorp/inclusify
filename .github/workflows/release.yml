@@ -68,12 +68,15 @@ jobs:
           args: release --skip-validate
         env:
           PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+          RELEASES_AWS_BUCKET: ${{ secrets.RELEASES_AWS_BUCKET }}
+          RELEASE_AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          RELEASE_AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
           CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
-          RELEASES_AWS_BUCKET: ${{ secrets.RELEASES_AWS_BUCKET }}
       - name: Run clamAV antivirus scanner
         run: sudo clamscan /home/runner/work/$REPO/$REPO/dist/
         env:
