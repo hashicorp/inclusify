@@ -39,7 +39,7 @@ CONFIG_PACKED  := .tmp/config-packed
 default: help
 
 help:
-	@echo "Usage:"
+	@echo "Usage for master branch:"
 	@echo "  make $(CONFIG): recompile config.yml from $(SOURCE_DIR)/"
 	@echo "  make $(VERIFY): verify that config.yml is a true mapping from $(SOURCE_DIR)/"
 	@echo
@@ -88,8 +88,8 @@ $(TMP): $(CONFIG_SOURCE)
 .PHONY: config-up-to-date
 config-up-to-date: $(TMP) # Note this must not depend on $(OUT)!
 	@if diff -w $(OUT) $<; then \
-		echo "Generated $(OUT) is up to date!"; \
+		echo "master generated $(OUT) is up to date!"; \
 	else \
-		echo "Generated $(OUT) is out of date, run make $(CONFIG) to update."; \
+		echo "master generated $(OUT) is out of date, run make $(CONFIG) to update."; \
 		exit 1; \
 	fi

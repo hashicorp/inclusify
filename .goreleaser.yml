@@ -11,6 +11,9 @@ builds:
       - windows_amd64
     hooks:
       post: |
+        {{ if .Env.SKIP_SIGNING }}
+        echo "Skipping codesign"
+        {{ else }}
         docker run
           -e ARTIFACTORY_TOKEN={{ .Env.ARTIFACTORY_TOKEN }}
           -e ARTIFACTORY_USER={{ .Env.ARTIFACTORY_USER }}
@@ -18,11 +21,12 @@ builds:
           -v {{ dir .Path }}:/workdir
           {{ .Env.CODESIGN_IMAGE }}
           sign -product-name={{ .ProjectName }} {{ .Name }}
+        {{ end }}
     dir: ./cmd/inclusify/
     flags:
       - -trimpath
     ldflags:
-      - '-X "main.GitCommit=$(shell git rev-parse HEAD)"'
+      - '-X "main.GitCommit=$(git rev-parse HEAD)"'
   - mod_timestamp: '{{ .CommitTimestamp }}'
     targets:
       - linux_386
@@ -31,7 +35,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - '-X "main.GitCommit=$(shell git rev-parse HEAD)"'
+      - '-X "main.GitCommit=$(git rev-parse HEAD)"'
 
 archives:
   - format: zip
@@ -46,16 +50,6 @@ checksum:
 signs:
   - args: ["-u", "{{ .Env.PGP_KEY_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
     artifacts: checksum
- 
-publishers:
-  - name: "hc-releases"
-    checksum: true
-    signature: true
-    cmd: hc-releases upload-file {{ abs .ArtifactPath }} -bucket={{ .Env.RELEASES_AWS_BUCKET }}
-    env:
-      - AWS_ACCESS_KEY_ID={{ .Env.RELEASE_AWS_ACCESS_KEY_ID }}
-      - AWS_SECRET_ACCESS_KEY={{ .Env.RELEASE_AWS_SECRET_ACCESS_KEY }}
-      - RELEASES_AWS_BUCKET={{ .Env.RELEASES_AWS_BUCKET }}
 
 changelog:
   skip: true

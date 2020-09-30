@@ -62,7 +62,7 @@ func InitializeRepo(c *CreateScaffoldCommand) (repoRef *git.Repository, dir stri
 	return repo, dir, nil
 }
 
-// CopyCIFiles copies the files from tests/fakeCi/* into the temp-dir
+// CopyCIFiles copies the files from tests/fakeRepo/* into the temp-dir
 func CopyCIFiles(c *CreateScaffoldCommand, dir string) (err error) {
 	c.Config.Logger.Info("Copying test CI files into temp directory")
 	path, err := os.Getwd()
@@ -70,13 +70,13 @@ func CopyCIFiles(c *CreateScaffoldCommand, dir string) (err error) {
 		return err
 	}
 	parent := filepath.Dir(path)
-	fakeCIPath := filepath.Join(parent, "tests", "fakeCI")
-	if _, err := os.Stat(fakeCIPath); err != nil {
+	fakeRepoPath := filepath.Join(parent, "tests", "fakeRepo")
+	if _, err := os.Stat(fakeRepoPath); err != nil {
 		if os.IsNotExist(err) {
 			return err
 		}
 	}
-	err = copy.Copy(fakeCIPath, dir)
+	err = copy.Copy(fakeRepoPath, dir)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func CopyCIFiles(c *CreateScaffoldCommand, dir string) (err error) {
 	return nil
 }
 
-// GitPushCommit adds, commits, and pushes the fakeCI files to the base branch
+// GitPushCommit adds, commits, and pushes the fakeRepo files to the base branch
 func GitPushCommit(c *CreateScaffoldCommand, repo *git.Repository) (err error) {
 	worktree, err := repo.Worktree()
 	if err != nil {
