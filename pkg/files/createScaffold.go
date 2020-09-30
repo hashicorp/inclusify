@@ -120,7 +120,7 @@ func GitPushCommit(c *CreateScaffoldCommand, repo *git.Repository) (err error) {
 		RemoteName: "master",
 		RefSpecs:   referenceList,
 		Auth: &http.BasicAuth{
-			Username: "irrelevant",
+			Username: "irrelevant", // This cannot be an empty string
 			Password: c.Config.Token,
 		},
 	})
