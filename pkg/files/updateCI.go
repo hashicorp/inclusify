@@ -81,13 +81,13 @@ func UpdateCIReferences(c *UpdateCICommand, dir string, paths []string) (filesCh
 				if err != nil {
 					return err
 				}
-				if strings.HasSuffix(path, ".yml") || strings.HasSuffix(path, ".yaml") {
+				if strings.HasSuffix(path, ".yml") || strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".md") || strings.Contains(path, "Makefile") {
 					c.Config.Logger.Info("Checking the file at path", "path", path)
 					read, err := ioutil.ReadFile(path)
 					if err != nil {
 						return err
 					}
-					// Find and replace all references from $base to $target within the *.y{a}ml files
+					// Find and replace all references from $base to $target within the target files
 					newContents := strings.Replace(string(read), c.Config.Base, c.Config.Target, -1)
 					// Set flag to true if the file was modified
 					if newContents != string(read) {
@@ -122,7 +122,7 @@ func GitPush(c *UpdateCICommand, tmpBranch string, repo *git.Repository) (err er
 	}
 
 	c.Config.Logger.Info("Committing changes")
-	commitMsg := fmt.Sprintf("Update CI references from %s to %s", c.Config.Base, c.Config.Target)
+	commitMsg := fmt.Sprintf("Update references from %s to %s", c.Config.Base, c.Config.Target)
 	commitSha, err := worktree.Commit(commitMsg, &git.CommitOptions{
 		Author: &object.Signature{
 			When: time.Now(),
@@ -188,7 +188,7 @@ func (c *UpdateCICommand) Run(args []string) int {
 	}
 	c.Config.Logger.Info("Retrieved HEAD commit of branch", "branch", c.TempBranch, "sha", ref.Hash())
 
-	paths := []string{".circleci", ".github", ".teamcity", ".travis.yml", ".travis.yaml", ".goreleaser.yml", ".goreleaser.yaml"}
+	paths := []string{".circleci", ".github", ".teamcity", ".travis.yml", ".travis.yaml", ".goreleaser.yml", ".goreleaser.yaml", "README.md", "Makefile"}
 	filesChanged, err := UpdateCIReferences(c, dir, paths)
 	if err != nil {
 		return c.exitError(err)

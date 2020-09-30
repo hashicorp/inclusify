@@ -1,0 +1,6 @@
+builds:
+  - mod_timestamp: '{{ .CommitTimestamp }}'
+    targets:
+      - darwin_amd64
+    hooks:
+      post: echo "master build"
