@@ -208,7 +208,7 @@ func Test_CreateBranches(t *testing.T) {
 }
 
 // Test_UpdateOpenPullRequestsNoOp updates any open pull requests that have 'main' as a base
-// Since there are no open PR's targetting that base, this will effectively do nothing
+// Since there are no open PR's targeting that base, this will effectively do nothing
 func Test_UpdateOpenPullRequestsNoOp(t *testing.T) {
 	defer seq()()
 	mockUI := cli.NewMockUi()
@@ -412,8 +412,8 @@ func Test_UpdateOpenPullRequests(t *testing.T) {
 
 	// Make some assertions about the UI output
 	output := mockUI.OutputWriter.String()
-	assert.Contains(t, output, fmt.Sprintf("Getting all open PR's targetting the branch: base=%s", base))
-	assert.Contains(t, output, fmt.Sprintf("Retrieved all open PR's targetting the branch: base=%s", base))
+	assert.Contains(t, output, fmt.Sprintf("Getting all open PR's targeting the branch: base=%s", base))
+	assert.Contains(t, output, fmt.Sprintf("Retrieved all open PR's targeting the branch: base=%s", base))
 	assert.Contains(t, output, fmt.Sprintf("Successfully updated base branch of PR to target: base=%s target=%s", base, target))
 	assert.Contains(t, output, "Success!")
 }
