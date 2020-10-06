@@ -47,13 +47,13 @@ func inner() error {
 		}
 	}
 
-	tmpBranch := "update-ci-references"
+	tmpBranch := "update-references"
 	c.Commands = map[string]cli.CommandFactory{
 		"createBranches": func() (cli.Command, error) {
 			return &branches.CreateCommand{Config: cf, GithubClient: client, BranchesList: []string{tmpBranch}}, nil
 		},
-		"updateCI": func() (cli.Command, error) {
-			return &files.UpdateCICommand{Config: cf, GithubClient: client, TempBranch: tmpBranch}, nil
+		"updateRefs": func() (cli.Command, error) {
+			return &files.UpdateRefsCommand{Config: cf, GithubClient: client, TempBranch: tmpBranch}, nil
 		},
 		"updatePulls": func() (cli.Command, error) {
 			return &pulls.UpdateCommand{Config: cf, GithubClient: client}, nil

@@ -113,9 +113,7 @@ func (m *MockGithubGitInteractor) CreateRef(
 
 // DeleteRef ..................
 func (m *MockGithubGitInteractor) DeleteRef(
-	ctx context.Context, owner string, repo string, ref string,
-) (*github.Response, error) {
-
+	ctx context.Context, owner string, repo string, ref string) (*github.Response, error) {
 	return nil, nil
 }
 

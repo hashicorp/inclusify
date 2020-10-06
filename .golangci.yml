@@ -1,0 +1,44 @@
+run:
+  concurrency: 4
+  timeout: 5m
+linters:
+  # `enable-all` is deprecated and will be removed soon.
+  disable-all: true
+  enable:
+    - typecheck
+    - dupl
+    - goprintffuncname
+    - govet
+    - nolintlint
+    - rowserrcheck
+    - gofmt
+    - golint
+    - goimports
+    - misspell
+    - bodyclose
+    - unconvert
+    - interfacer
+    - ineffassign
+    - scopelint
+    - structcheck
+    - deadcode
+    - depguard
+    - dogsled
+    - errcheck
+    - funlen
+    - goconst
+    - gocritic
+    - gocyclo
+    - gosimple
+    - staticcheck
+    - stylecheck
+    - unused
+    - varcheck
+    - unparam
+    - unconvert
+    - whitespace
+
+linters-settings:
+  funlen:
+    lines: 80
+    statements: 40

@@ -29,7 +29,7 @@ func (c *MergeCommand) Run(args []string) int {
 		return c.exitError(err)
 	}
 	if !*result.Merged {
-		return c.exitError(errors.New("Failed to merge PR"))
+		return c.exitError(errors.New("failed to merge PR"))
 	}
 
 	c.Config.Logger.Info("Successfully merged PR", "number", c.PullNumber)

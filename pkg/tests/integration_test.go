@@ -34,6 +34,7 @@ type Inputs struct {
 	token          string
 	base           string
 	target         string
+	exclusion      string
 	temp           string
 	random         string
 	branchesList   []string
@@ -55,7 +56,8 @@ func (i *Inputs) SetVals(t *testing.T) {
 	i.repo = fmt.Sprintf("inclusify-tests-%s", uniuri.NewLenChars(8, []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")))
 	i.base = "master-clone"
 	i.target = "main"
-	i.temp = "update-ci-references"
+	i.exclusion = "scripts/,.teamcity.yml"
+	i.temp = "update-references"
 	i.random = "my-fancy-branch"
 }
 
@@ -166,7 +168,7 @@ func Test_CreateScaffold(t *testing.T) {
 }
 
 // Test_CreateBranches creates the master-clone branch,
-// update-ci-references branch, and the main branch, off of the head of master
+// update-references branch, and the main branch, off of the head of master
 func Test_CreateBranches(t *testing.T) {
 	defer seq()()
 	subcommand := "createBranches"
@@ -206,7 +208,7 @@ func Test_CreateBranches(t *testing.T) {
 }
 
 // Test_UpdateOpenPullRequestsNoOp updates any open pull requests that have 'main' as a base
-// Since there are no open PR's targetting that base, this will effectively do nothing
+// Since there are no open PR's targeting that base, this will effectively do nothing
 func Test_UpdateOpenPullRequestsNoOp(t *testing.T) {
 	defer seq()()
 	mockUI := cli.NewMockUi()
@@ -237,15 +239,15 @@ func Test_UpdateOpenPullRequestsNoOp(t *testing.T) {
 	assert.Contains(t, output, "Exiting -- There are no open PR's to update")
 }
 
-// Test_UpdateCI finds and replaces all references of 'master' to 'main' in the given CI files
-// in the 'update-ci-references' branch, and opens a PR to merge changes
-// from 'update-ci-references' to 'main'
-func Test_UpdateCI(t *testing.T) {
+// Test_UpdateRefs finds and replaces all references of 'master' to 'main' in the given CI files
+// in the 'update-references' branch, and opens a PR to merge changes from 'update-references' to 'main'
+// No files/dirs in `exclusions` is considered.
+func Test_UpdateRefs(t *testing.T) {
 	defer seq()()
 	mockUI := cli.NewMockUi()
 	base := "master"
 	owner, repo, token, _, target, temp, _ := i.GetVals()
-	args := []string{"updateCI", "--owner", owner, "--repo", repo, "--base", base, "--target", target, "--token", token}
+	args := []string{"updateRefs", "--owner", owner, "--repo", repo, "--base", base, "--target", target, "--token", token}
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
@@ -254,7 +256,7 @@ func Test_UpdateCI(t *testing.T) {
 	client, err := gh.NewBaseGithubInteractor(token)
 	require.NoError(t, err)
 
-	command := &files.UpdateCICommand{
+	command := &files.UpdateRefsCommand{
 		Config:       config,
 		GithubClient: client,
 		TempBranch:   temp,
@@ -271,11 +273,13 @@ func Test_UpdateCI(t *testing.T) {
 	output := mockUI.OutputWriter.String()
 	assert.Contains(t, output, fmt.Sprintf("Successfully cloned repo into local dir: repo=%s dir=", repo))
 	assert.Contains(t, output, fmt.Sprintf("Retrieved HEAD commit of branch: branch=%s", temp))
-	assert.Contains(t, output, "Finding and replacing all refs from base to target in dir/paths")
+	assert.Contains(t, output, "Finding and replacing all references from base to target in dir")
+	assert.Contains(t, output, "Finding and replacing all references from base to target in dir")
+	assert.Contains(t, output, "Skipping dirs/files at path: path=")
 	assert.Contains(t, output, "Running `git add .`")
 	assert.Contains(t, output, "Committing changes")
 	assert.Contains(t, output, fmt.Sprintf("Pushing commit to remote: branch=%s sha=", temp))
-	assert.Contains(t, output, fmt.Sprintf("Creating PR to merge CI changes from branch into target: branch=%s target=%s", temp, target))
+	assert.Contains(t, output, fmt.Sprintf("Creating PR to merge changes from branch into target: branch=%s target=%s", temp, target))
 	assert.Contains(t, output, fmt.Sprintf("Success! Review and merge the open PR: url=https://github.com/%s/%s/pull/", owner, repo))
 
 	// Extract pull request URL from output
@@ -288,7 +292,7 @@ func Test_UpdateCI(t *testing.T) {
 	i.SetURL(url)
 }
 
-// Test_MergePullRequest merges the pull request created in TestUpdateCI()
+// Test_MergePullRequest merges the pull request created in TestUpdateRefs()
 func Test_MergePullRequest(t *testing.T) {
 	defer seq()()
 	pullRequestURL := i.GetURL()
@@ -336,7 +340,7 @@ func Test_CreateOpenPullRequest(t *testing.T) {
 	defer seq()()
 	mockUI := cli.NewMockUi()
 	owner, repo, token, base, _, _, random := i.GetVals()
-	args := []string{"updateCI", "--owner", owner, "--repo", repo, "--base", "master", "--target", base, "--token", token}
+	args := []string{"updateRefs", "--owner", owner, "--repo", repo, "--base", "master", "--target", base, "--token", token}
 
 	// Parse and validate cmd line flags and env vars
 	config, err := config.ParseAndValidate(args, mockUI)
@@ -345,7 +349,7 @@ func Test_CreateOpenPullRequest(t *testing.T) {
 	client, err := gh.NewBaseGithubInteractor(token)
 	require.NoError(t, err)
 
-	command := &files.UpdateCICommand{
+	command := &files.UpdateRefsCommand{
 		Config:       config,
 		GithubClient: client,
 		TempBranch:   random,
@@ -362,11 +366,11 @@ func Test_CreateOpenPullRequest(t *testing.T) {
 	output := mockUI.OutputWriter.String()
 	assert.Contains(t, output, fmt.Sprintf("Successfully cloned repo into local dir: repo=%s dir=", repo))
 	assert.Contains(t, output, fmt.Sprintf("Retrieved HEAD commit of branch: branch=%s", random))
-	assert.Contains(t, output, "Finding and replacing all refs from base to target in dir/paths")
+	assert.Contains(t, output, "Finding and replacing all references from base to target in dir")
 	assert.Contains(t, output, "Running `git add .`")
 	assert.Contains(t, output, "Committing changes")
 	assert.Contains(t, output, fmt.Sprintf("Pushing commit to remote: branch=%s sha=", random))
-	assert.Contains(t, output, fmt.Sprintf("Creating PR to merge CI changes from branch into target: branch=%s target=%s", random, "master"))
+	assert.Contains(t, output, fmt.Sprintf("Creating PR to merge changes from branch into target: branch=%s target=%s", random, "master"))
 	assert.Contains(t, output, fmt.Sprintf("Success! Review and merge the open PR: url=https://github.com/%s/%s/pull/", owner, repo))
 
 	// Extract pull request URL from output
@@ -408,8 +412,8 @@ func Test_UpdateOpenPullRequests(t *testing.T) {
 
 	// Make some assertions about the UI output
 	output := mockUI.OutputWriter.String()
-	assert.Contains(t, output, fmt.Sprintf("Getting all open PR's targetting the branch: base=%s", base))
-	assert.Contains(t, output, fmt.Sprintf("Retrieved all open PR's targetting the branch: base=%s", base))
+	assert.Contains(t, output, fmt.Sprintf("Getting all open PR's targeting the branch: base=%s", base))
+	assert.Contains(t, output, fmt.Sprintf("Retrieved all open PR's targeting the branch: base=%s", base))
 	assert.Contains(t, output, fmt.Sprintf("Successfully updated base branch of PR to target: base=%s target=%s", base, target))
 	assert.Contains(t, output, "Success!")
 }
