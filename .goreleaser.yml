@@ -18,7 +18,6 @@ builds:
           -v {{ dir .Path }}:/workdir
           {{ .Env.CODESIGN_IMAGE }}
           sign -product-name={{ .ProjectName }} {{ .Name }}
-        {{ end }}
     dir: ./cmd/inclusify/
     flags:
       - -trimpath
