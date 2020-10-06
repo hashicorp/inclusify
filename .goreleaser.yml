@@ -11,9 +11,6 @@ builds:
       - windows_amd64
     hooks:
       post: |
-        {{ if .Env.SKIP_SIGNING }}
-        echo "Skipping codesign"
-        {{ else }}
         docker run
           -e ARTIFACTORY_TOKEN={{ .Env.ARTIFACTORY_TOKEN }}
           -e ARTIFACTORY_USER={{ .Env.ARTIFACTORY_USER }}
