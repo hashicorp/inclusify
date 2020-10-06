@@ -8,7 +8,7 @@ Usage: inclusify [--version] [--help] <command> [<args>]
 Available commands are:
     createBranches    Create new branches on GitHub. [subcommand]
     deleteBranches    Delete repo's base branch and other auto-created branches. [subcommand]
-    updateCI          Update all CI *.y{a]ml references. [subcommand]
+    updateRefs        Update code references from base to target in the given repo. [subcommand]
     updateDefault     Update repo's default branch. [subcommand]
     updatePulls       Update base branch of open PR's. [subcommand]
 ```
@@ -36,10 +36,10 @@ Available commands are:
 Set up the new target branch and temporary branches which will be used in the next steps, and create a PR to update all CI references from `base` to `target`. This happens via a simple find and replace within the root files `.goreleaser.y{a}ml`, `.travis.y{a}ml`, and within any files in the root directories `.circleci`, `.teamcity`, `.github`.
 ```
 ./inclusify createBranches
-./inclusify updateCI 
+./inclusify updateRefs
 ```
 
-On success, updateCI will return a pull request URL. **Review the PR carefully, make any required changes, and merge it into the `target` branch before continuing.** 
+On success, updateRefs will return a pull request URL. **Review the PR carefully, make any required changes, and merge it into the `target` branch before continuing.** 
 
 Continue with the below commands to update the base branch of any open PR's from `base` to `target`. Finally, update the repo's default branch from `base` to `target`. If the `base` branch was protected, copy that protection over to `target`. 
 ```

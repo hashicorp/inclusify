@@ -38,7 +38,8 @@ func (c *DeleteCommand) Run(args []string) int {
 		refName := fmt.Sprintf("refs/heads/%s", branch)
 		_, err = c.GithubClient.GetGit().DeleteRef(ctx, c.Config.Owner, c.Config.Repo, refName)
 		if err != nil {
-			return c.exitError(fmt.Errorf("failed to delete ref: %w", err))
+			// If there's no branch to delete, that's OK! Log it and continue on
+			c.Config.Logger.Info("Failed to delete ref", "branch", branch, "error", err)
 		}
 
 		c.Config.Logger.Info("Success! branch has been deleted", "branch", branch, "ref", refName)
