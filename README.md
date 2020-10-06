@@ -17,15 +17,15 @@ Available commands are:
 
 1. Download the latest release for your os/platform from https://github.com/hashicorp/inclusify/releases, and unzip to access the go binary.
 
-2. Create a `.env` file with the following environment variables:
+2. Create an `.env` file with the following variables:
 
-```
-export INCLUSIFY_OWNER="$owner" // REQUIRED: Name of the GitHub org or user account where the repo lives
-export INCLUSIFY_REPO="$repo" // REQUIRED: Name of the repo
-export INCLUSIFY_TOKEN="$github_personal_access_token" // REQUIRED: Your GitHub personal access token that has write access to the repo
-export INCLUSIFY_BASE="master" // OPTIONAL: Name of the current default base branch for the repo. This defaults to "master"
-export INCLUSIFY_TARGET="main" // OPTIONAL: Name of the new target base branch for the repo. This defaults to "main"
-```
+| Environment Variable                   | Explanation                                                                          |
+|----------------------------------------|--------------------------------------------------------------------------------------|
+| export INCLUSIFY_OWNER="$owner"        | REQUIRED: Name of the GitHub org or user account where the repo lives                |
+| export INCLUSIFY_REPO="$repo"          | REQUIRED: Name of the repo to update                                                 |
+| export INCLUSIFY_TOKEN="$github_token" | REQUIRED: GitHub personal access token with -rw permissions                          |
+| export INCLUSIFY_BASE="master"         | OPTIONAL: Name of the current default branch for the repo. This defaults to "master" |
+| export INCLUSIFY_TARGET="main"         | OPTIONAL: Name of the new target base branch for the repo. This defaults to "main"   |
 
 **Note:** You can alternatively pass in the required flags to the subcommands or set environment variables locally without sourcing an env file. For ease of use, however, we recommend sourcing a local env file. 
 
