@@ -50,7 +50,6 @@ jobs:
           version: latest
           args: release --skip-validate --timeout "60m" 
         env:
-          SKIP_SIGNING: false
           PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

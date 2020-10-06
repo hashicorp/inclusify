@@ -11,7 +11,7 @@ builds:
       - windows_amd64
     hooks:
       post: |
-        {{ if .Env.SKIP_SIGNING == "false" }}
+        {{ if .Env.SKIP_SIGNING }}
         echo "Skipping codesign"
         {{ else }}
         docker run
