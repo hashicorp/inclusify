@@ -18,7 +18,7 @@ import (
 func TestCreateBranchRun(t *testing.T) {
 	ui := cli.NewMockUi()
 	client := gh.NewMockGithubInteractor()
-	branches := []string{"update-ci-references"}
+	branches := []string{"update-references"}
 
 	config := &config.Config{
 		Owner:  "hashicorp",
@@ -46,7 +46,7 @@ func TestCreateBranchRun(t *testing.T) {
 
 	// Make some assertions about the UI output
 	output := ui.OutputWriter.String()
-	assert.Contains(t, output, "Creating new branch update-ci-references off of master")
+	assert.Contains(t, output, "Creating new branch update-references off of master")
 	assert.Contains(t, output, "Creating new branch main off of master")
 	assert.Contains(t, output, "Success!")
 
@@ -56,7 +56,7 @@ func TestCreateBranchRun(t *testing.T) {
 
 	want := []*github.Reference{
 		{
-			Ref:    github.String("refs/heads/update-ci-references"),
+			Ref:    github.String("refs/heads/update-references"),
 			Object: &github.GitObject{SHA: &client.MasterRef},
 		},
 		{
