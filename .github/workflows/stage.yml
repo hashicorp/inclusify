@@ -3,7 +3,7 @@ name: Stage
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   stage:
