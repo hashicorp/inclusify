@@ -48,13 +48,6 @@ func (c *DeleteCommand) Run(args []string) int {
 	return 0
 }
 
-// exitError prints the error to the configured UI Error channel (usually stderr) then
-// returns the exit code.
-func (c *DeleteCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
-	return 1
-}
-
 // Help returns the full help text.
 func (c *DeleteCommand) Help() string {
 	return `Usage: inclusify deleteBranches owner repo base token
