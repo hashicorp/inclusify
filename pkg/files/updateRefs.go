@@ -59,7 +59,6 @@ func CloneRepo(c *UpdateRefsCommand) (repoRef *git.Repository, dir string, err e
 	c.Config.Logger.Info("Successfully cloned repo into local dir", "repo", c.Config.Repo, "dir", dir)
 
 	return repo, dir, nil
-
 }
 
 // UpdateReferences walks through the files in the cloned repo, and updates references from
@@ -86,7 +85,7 @@ func UpdateReferences(c *UpdateRefsCommand, dir string) (filesChanged bool, err 
 				return err
 			}
 			// Find and replace all references from $base to $target within the files
-			newContents := strings.Replace(string(read), c.Config.Base, c.Config.Target, -1)
+			newContents := strings.ReplaceAll(string(read), c.Config.Base, c.Config.Target)
 			// Set flag to true if the file was modified
 			if newContents != string(read) {
 				filesChanged = true
@@ -182,7 +181,7 @@ func OpenPull(c *UpdateRefsCommand, tmpBranch string) (err error) {
 }
 
 // Run updates references from $base to $target in the cloned repo
-// Example: Update all occurences of 'master' to 'main' in ./.github
+// Example: Update all occurrences of 'master' to 'main' in ./.github
 func (c *UpdateRefsCommand) Run(args []string) int {
 	repo, dir, err := CloneRepo(c)
 	if err != nil {

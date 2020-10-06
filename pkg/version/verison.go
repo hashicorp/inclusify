@@ -4,7 +4,7 @@ import (
 	version "github.com/hashicorp/go-version"
 )
 
-// Current version of inclusify.
+// Version is the current version of inclusify.
 var Version = "0.1.2"
 
 // SemVer is an instance of version.Version. This has the secondary

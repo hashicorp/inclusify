@@ -22,7 +22,7 @@ func GetOpenPRs(c *UpdateCommand) (pulls []*github.PullRequest, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	c.Config.Logger.Info("Getting all open PR's targetting the branch", "base", c.Config.Base)
+	c.Config.Logger.Info("Getting all open PR's targeting the branch", "base", c.Config.Base)
 	var allPulls []*github.PullRequest
 	opts := &github.PullRequestListOptions{
 		State:       "open",
@@ -34,7 +34,7 @@ func GetOpenPRs(c *UpdateCommand) (pulls []*github.PullRequest, err error) {
 	for {
 		pulls, resp, err := c.GithubClient.GetPRs().List(ctx, c.Config.Owner, c.Config.Repo, opts)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to retrieve all open PR's: %w", err)
+			return nil, fmt.Errorf("failed to retrieve all open PR's: %w", err)
 		}
 		allPulls = append(allPulls, pulls...)
 		if resp.NextPage == 0 {
@@ -43,13 +43,13 @@ func GetOpenPRs(c *UpdateCommand) (pulls []*github.PullRequest, err error) {
 		opts.Page = resp.NextPage
 	}
 
-	c.Config.Logger.Info("Retrieved all open PR's targetting the branch", "base", c.Config.Base, "prCount", len(allPulls))
+	c.Config.Logger.Info("Retrieved all open PR's targeting the branch", "base", c.Config.Base, "prCount", len(allPulls))
 
 	return allPulls, nil
 }
 
 // UpdateOpenPRs will update all open PR's that pointed to $base to instead point to $target
-// Exmaple: Update all open PR's that point to 'master' to point to 'main'
+// Example: Update all open PR's that point to 'master' to point to 'main'
 func UpdateOpenPRs(c *UpdateCommand, pulls []*github.PullRequest, targetRef *github.Reference) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -86,7 +86,7 @@ func GetRef(c *UpdateCommand) (targetRef *github.Reference, err error) {
 // Run updates all open PR's that point to $base to instead point to $target
 // Example: Update all open PR's that point to 'master' to point to 'main'
 func (c *UpdateCommand) Run(args []string) int {
-	// Get a list of open PR's targetting the $base branch
+	// Get a list of open PR's targeting the $base branch
 	pulls, err := GetOpenPRs(c)
 	if err != nil {
 		return c.exitError(err)
