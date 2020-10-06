@@ -52,7 +52,19 @@ After verifying everything is working properly, delete the old base branch. If t
 ./inclusify deleteBranches
 ```
 
-5. All done! For local development, remember to fetch and push to the new origin.
+5. Instruct all contributors to the repository to reset their local remote origins using one of the below methods:
+    1. Reset your local repo and branches to point to the new default
+        1. run `git fetch`
+            1. fetches all upstream tags/branches; this will pull the new default branch and update that the previous one at `origin/$INCLUSIFY_BASE` has been deleted
+        1. run `git remote set-head origin -a`
+            1. this sets your local `origin/HEAD` to reflect the source `origin/HEAD` of the new default branch
+        1. for each of your in-progress branches, run `git branch --set-upstream-to origin/$INCLUSIFY_TARGET`, e.g. `git branch --set-upstream-to origin/main`
+            1. this sets your local branch(es) to track diffs from `origin/$INCLUSIFY_TARGET`
+        1. the last step has two options:
+            1. if you only have `$INCLUSIFY_BASE` e.g. `master` in your local list of branches, then you need to rename it to `$INCLUSIFY_TARGET` e.g. `main` by running `git branch -m master main`
+            1. if you have both `master` and `main` branches in your list, then delete your local copy of `master` with `git branch -d master`
+    1. Delete your local repo and reclone
+        1. Of course you will want to push up any in-progress work first, ensure you don't have anything valuable stashed, etc.
 
 ## Local Development
 
