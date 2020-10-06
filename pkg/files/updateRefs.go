@@ -101,7 +101,10 @@ func UpdateReferences(c *UpdateRefsCommand, dir string) (filesChanged bool, err 
 		return nil
 	}
 
-	filepath.Walk(dir, callback)
+	err = filepath.Walk(dir, callback)
+	if err != nil {
+		return false, err
+	}
 
 	return filesChanged, nil
 }
