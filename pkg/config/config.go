@@ -70,6 +70,7 @@ func ParseAndValidate(args []string, ui cli.Ui) (c *Config, err error) {
 	if len(exclusion) > 0 {
 		exclusionArr = strings.Split(exclusion, ",")
 	}
+	exclusionArr = append(exclusionArr, ".git/", "go.mod", "go.sum")
 
 	logger := hclog.New(&hclog.LoggerOptions{
 		Name:   "inclusify",

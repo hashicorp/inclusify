@@ -26,6 +26,7 @@ func Test_ParseAndValidate_EnvVars(t *testing.T) {
 	ui := &cli.BasicUi{}
 	config, err := ParseAndValidate(args, ui)
 	require.NoError(t, err)
+	exclusionArr = append(exclusionArr, ".git/", "go.mod", "go.sum")
 
 	// Make some assertions about the UI output
 	assert.Equal(t, os.Getenv("INCLUSIFY_OWNER"), config.Owner)
@@ -52,6 +53,7 @@ func Test_ParseAndValidate_Flags(t *testing.T) {
 	exclusionArr := strings.Split(exclusion, ",")
 
 	args := []string{"subcommand", "--owner", owner, "--repo", repo, "--token", token, "--exclusion", exclusion}
+	exclusionArr = append(exclusionArr, ".git/", "go.mod", "go.sum")
 
 	ui := &cli.BasicUi{}
 	config, err := ParseAndValidate(args, ui)

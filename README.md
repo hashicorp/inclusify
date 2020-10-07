@@ -26,6 +26,7 @@ Available commands are:
 | export INCLUSIFY_TOKEN="$github_token" | REQUIRED: GitHub personal access token with -rw permissions                          |
 | export INCLUSIFY_BASE="master"         | OPTIONAL: Name of the current default branch for the repo. This defaults to "master" |
 | export INCLUSIFY_TARGET="main"         | OPTIONAL: Name of the new target base branch for the repo. This defaults to "main"   |
+| export INCLUSIFY_EXCLUSION="vendor/,scripts/hello.py,README.md" | OPTIONAL: Comma delimited list of directories or files to exclude from the find/replace. Paths should be relative to the root of the repo. |
 
 **Note:** You can alternatively pass in the required flags to the subcommands or set environment variables locally without sourcing an env file. For ease of use, however, we recommend sourcing a local env file. 
 
@@ -33,7 +34,7 @@ Available commands are:
 
 4. Run the below commands in the following order:
 
-Set up the new target branch and temporary branches which will be used in the next steps, and create a PR to update all CI references from `base` to `target`. This happens via a simple find and replace within the root files `.goreleaser.y{a}ml`, `.travis.y{a}ml`, and within any files in the root directories `.circleci`, `.teamcity`, `.github`.
+Set up the new target branch and temporary branches which will be used in the next steps, and create a PR to update all code references from `base` to `target`. This happens via a simple find and replace within all files in the repo, with the exception of `.git/`, `go.mod`, and `go.sum`. To exclude other directories or files from the search, add them to `INCLUSIFY_EXCLUSION`. 
 ```
 ./inclusify createBranches
 ./inclusify updateRefs
@@ -47,7 +48,7 @@ Continue with the below commands to update the base branch of any open PR's from
 ./inclusify updateDefault
 ```
 
-After verifying everything is working properly, delete the old base branch. If the `base` branch was protected, the protection will be removed automatically, and then the branch will be deleted. This will also delete the `update-ci-references` branch that was created in the first step. 
+After verifying everything is working properly, delete the old base branch. If the `base` branch was protected, the protection will be removed automatically, and then the branch will be deleted. This will also delete the `update-references` branch that was created in the first step. 
 ```
 ./inclusify deleteBranches
 ```

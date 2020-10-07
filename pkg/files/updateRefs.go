@@ -73,7 +73,6 @@ func UpdateReferences(c *UpdateRefsCommand, dir string) (filesChanged bool, err 
 		if len(c.Config.Exclusion) > 0 {
 			for _, fp := range c.Config.Exclusion {
 				if strings.Contains(path, fp) {
-					c.Config.Logger.Info("Skipping dirs/files at path", "path", path)
 					return nil
 				}
 			}
@@ -109,16 +108,16 @@ func UpdateReferences(c *UpdateRefsCommand, dir string) (filesChanged bool, err 
 }
 
 // GitPush adds, commits, and pushes all changes to $tmpBranch
-func GitPush(c *UpdateRefsCommand, tmpBranch string, repo *git.Repository) (err error) {
+func GitPush(c *UpdateRefsCommand, tmpBranch string, repo *git.Repository, dir string) (err error) {
 	worktree, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	c.Config.Logger.Info("Running `git add .`")
+	c.Config.Logger.Info("Running `git add ", dir, "`")
 	_, err = worktree.Add(".")
 	if err != nil {
-		return fmt.Errorf("failed to 'git add .': %w", err)
+		return fmt.Errorf("failed to `git add %s`: %w", dir, err)
 	}
 
 	c.Config.Logger.Info("Committing changes")
@@ -205,9 +204,7 @@ func (c *UpdateRefsCommand) Run(args []string) int {
 		return 0
 	}
 
-	defer os.RemoveAll(dir)
-
-	err = GitPush(c, c.TempBranch, repo)
+	err = GitPush(c, c.TempBranch, repo, dir)
 	if err != nil {
 		return c.exitError(err)
 	}
@@ -216,6 +213,8 @@ func (c *UpdateRefsCommand) Run(args []string) int {
 	if err != nil {
 		return c.exitError(err)
 	}
+
+	defer os.RemoveAll(dir)
 
 	return 0
 }
