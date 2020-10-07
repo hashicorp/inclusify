@@ -26,6 +26,7 @@ Available commands are:
 | export INCLUSIFY_TOKEN="$github_token" | REQUIRED: GitHub personal access token with -rw permissions                          |
 | export INCLUSIFY_BASE="master"         | OPTIONAL: Name of the current default branch for the repo. This defaults to "master" |
 | export INCLUSIFY_TARGET="main"         | OPTIONAL: Name of the new target base branch for the repo. This defaults to "main"   |
+| export INCLUSIFY_EXCLUSION="vendor/,scripts/hello.py,README.md" | OPTIONAL: Comma delimited list of directories or files to exclude from the find/replace. Paths should be relative to the root of the repo. |
 
 **Note:** You can alternatively pass in the required flags to the subcommands or set environment variables locally without sourcing an env file. For ease of use, however, we recommend sourcing a local env file. 
 
@@ -33,7 +34,7 @@ Available commands are:
 
 4. Run the below commands in the following order:
 
-Set up the new target branch and temporary branches which will be used in the next steps, and create a PR to update all CI references from `base` to `target`. This happens via a simple find and replace within the root files `.goreleaser.y{a}ml`, `.travis.y{a}ml`, and within any files in the root directories `.circleci`, `.teamcity`, `.github`.
+Set up the new target branch and temporary branches which will be used in the next steps, and create a PR to update all code references from `base` to `target`. This happens via a simple find and replace within all files in the repo, with the exception of `.git/`, `go.mod`, and `go.sum`. To exclude other directories or files from the search, add them to `INCLUSIFY_EXCLUSION`. 
 ```
 ./inclusify createBranches
 ./inclusify updateRefs
@@ -47,12 +48,24 @@ Continue with the below commands to update the base branch of any open PR's from
 ./inclusify updateDefault
 ```
 
-After verifying everything is working properly, delete the old base branch. If the `base` branch was protected, the protection will be removed automatically, and then the branch will be deleted. This will also delete the `update-ci-references` branch that was created in the first step. 
+After verifying everything is working properly, delete the old base branch. If the `base` branch was protected, the protection will be removed automatically, and then the branch will be deleted. This will also delete the `update-references` branch that was created in the first step. 
 ```
 ./inclusify deleteBranches
 ```
 
-5. All done! For local development, remember to fetch and push to the new origin.
+5. Instruct all contributors to the repository to reset their local remote origins using one of the below methods:
+    1. Reset your local repo and branches to point to the new default
+        1. run `git fetch`
+            1. fetches all upstream tags/branches; this will pull the new default branch and update that the previous one at `origin/$INCLUSIFY_BASE` has been deleted
+        1. run `git remote set-head origin -a`
+            1. this sets your local `origin/HEAD` to reflect the source `origin/HEAD` of the new default branch
+        1. for each of your in-progress branches, run `git branch --set-upstream-to origin/$INCLUSIFY_TARGET`, e.g. `git branch --set-upstream-to origin/main`
+            1. this sets your local branch(es) to track diffs from `origin/$INCLUSIFY_TARGET`
+        1. the last step has two options:
+            1. if you only have `$INCLUSIFY_BASE` e.g. `master` in your local list of branches, then you need to rename it to `$INCLUSIFY_TARGET` e.g. `main` by running `git branch -m master main`
+            1. if you have both `master` and `main` branches in your list, then delete your local copy of `master` with `git branch -d master`
+    1. Delete your local repo and reclone
+        1. Of course you will want to push up any in-progress work first, ensure you don't have anything valuable stashed, etc.
 
 ## Local Development
 
