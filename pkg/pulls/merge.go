@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/message"
 )
 
 // MergeCommand is a struct used to configure a Command for merging an open PR
@@ -32,7 +33,7 @@ func (c *MergeCommand) Run(args []string) int {
 		return c.exitError(errors.New("failed to merge PR"))
 	}
 
-	c.Config.Logger.Info("Successfully merged PR", "number", c.PullNumber)
+	c.Config.Logger.Info(message.Success("Successfully merged PR"), "number", c.PullNumber)
 
 	return 0
 }
@@ -40,6 +41,6 @@ func (c *MergeCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *MergeCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
+	c.Config.Logger.Error(message.Error(err.Error()))
 	return 1
 }

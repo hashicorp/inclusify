@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/message"
 )
 
 // CreateCommand is a struct used to configure a Command for creating new
@@ -29,7 +30,7 @@ func (c *CreateCommand) Run(args []string) int {
 	c.BranchesList = append(c.BranchesList, c.Config.Target)
 	for _, branch := range c.BranchesList {
 		c.Config.Logger.Info(fmt.Sprintf(
-			"Creating new branch %s off of %s", branch, c.Config.Base,
+			message.Info("Creating new branch %s off of %s"), branch, c.Config.Base,
 		))
 		refName := fmt.Sprintf("refs/heads/%s", c.Config.Base)
 		ref, _, err := c.GithubClient.GetGit().GetRef(ctx, c.Config.Owner, c.Config.Repo, refName)
@@ -52,7 +53,7 @@ func (c *CreateCommand) Run(args []string) int {
 		}
 	}
 
-	c.Config.Logger.Info("Success!")
+	c.Config.Logger.Info(message.Success("Success!"))
 
 	return 0
 }
@@ -60,7 +61,7 @@ func (c *CreateCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *CreateCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
+	c.Config.Logger.Error(message.Error(err.Error()))
 	return 1
 }
 

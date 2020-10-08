@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	hclog "github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/inclusify/pkg/message"
 	"github.com/mitchellh/cli"
 	nflag "github.com/namsral/flag"
 )
@@ -64,7 +65,10 @@ func ParseAndValidate(args []string, ui cli.Ui) (c *Config, err error) {
 	}
 
 	if owner == "" || repo == "" || token == "" {
-		return c, fmt.Errorf("required inputs are missing\nPass in all required flags or set env vars with the prefix INCLUSIFY\nRun [subcommand] --help to view required inputs")
+		return c, fmt.Errorf(
+			"%s\nPass in all required flags or set environment variables with the 'INCLUSIFY_' prefix.\nRun [subcommand] --help to view required inputs.",
+			message.Error("required inputs are missing"),
+		)
 	}
 
 	if len(exclusion) > 0 {

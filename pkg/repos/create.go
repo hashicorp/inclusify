@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-github/v32/github"
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/message"
 )
 
 // CreateCommand is a struct used to configure a Command for creating a
@@ -32,7 +33,7 @@ func (c *CreateCommand) Run(args []string) int {
 		return c.exitError(fmt.Errorf("call to create repo returned error: %w", err))
 	}
 
-	c.Config.Logger.Info("Successfully created new repo", "repo", repo.GetName(), "url", repo.GetHTMLURL())
+	c.Config.Logger.Info(message.Success("Successfully created new repo"), "repo", repo.GetName(), "url", repo.GetHTMLURL())
 
 	return 0
 }
@@ -40,6 +41,6 @@ func (c *CreateCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *CreateCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
+	c.Config.Logger.Error(message.Error(err.Error()))
 	return 1
 }

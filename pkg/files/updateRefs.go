@@ -18,6 +18,7 @@ import (
 
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/message"
 )
 
 // UpdateRefsCommand is a struct used to configure a Command for updating
@@ -56,7 +57,7 @@ func CloneRepo(c *UpdateRefsCommand) (repoRef *git.Repository, dir string, err e
 		return nil, "", fmt.Errorf("failed to clone repo %s %s %w", url, refName, err)
 	}
 
-	c.Config.Logger.Info("Successfully cloned repo into local dir", "repo", c.Config.Repo, "dir", dir)
+	c.Config.Logger.Info(message.Success("Successfully cloned repo into local dir"), "repo", c.Config.Repo, "dir", dir)
 
 	return repo, dir, nil
 }
@@ -169,12 +170,12 @@ func OpenPull(c *UpdateRefsCommand, tmpBranch string) (err error) {
 		MaintainerCanModify: &modify,
 	}
 
-	c.Config.Logger.Info("Creating PR to merge changes from branch into target", "branch", tmpBranch, "target", c.Config.Target)
+	c.Config.Logger.Info(message.Info("Creating PR to merge changes from branch into target"), "branch", tmpBranch, "target", c.Config.Target)
 	pr, _, err := c.GithubClient.GetPRs().Create(ctx, c.Config.Owner, c.Config.Repo, pull)
 	if err != nil {
 		return fmt.Errorf("failed to open PR: %w", err)
 	}
-	c.Config.Logger.Info("Success! Review and merge the open PR", "url", pr.GetHTMLURL())
+	c.Config.Logger.Info(message.Success("Success! Review and merge the open PR"), "url", pr.GetHTMLURL())
 
 	return nil
 }
@@ -200,7 +201,7 @@ func (c *UpdateRefsCommand) Run(args []string) int {
 
 	// Exit if no files were modified during the find and replace
 	if !filesChanged {
-		c.Config.Logger.Info("Exiting -- No CI files contained base, so there's nothing more to do", "base", c.Config.Base)
+		c.Config.Logger.Info(message.Info("Exiting -- No CI files contained base, so there's nothing more to do"), "base", c.Config.Base)
 		return 0
 	}
 
@@ -222,7 +223,7 @@ func (c *UpdateRefsCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *UpdateRefsCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
+	c.Config.Logger.Error(message.Error(err.Error()))
 	return 1
 }
 

@@ -11,12 +11,13 @@ import (
 	"github.com/hashicorp/inclusify/pkg/files"
 	"github.com/hashicorp/inclusify/pkg/gh"
 	"github.com/hashicorp/inclusify/pkg/pulls"
+	"github.com/hashicorp/inclusify/pkg/message"
 	"github.com/hashicorp/inclusify/pkg/version"
 )
 
 func main() {
 	if err := inner(); err != nil {
-		log.Printf("inclusify error: %s\n", err)
+		log.Printf("%s: %s\n", message.Error("inclusify error"), err)
 		os.Exit(1)
 	}
 }

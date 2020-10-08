@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/message"
 )
 
 // DeleteCommand is a struct used to configure a Command for deleting the
@@ -42,7 +43,7 @@ func (c *DeleteCommand) Run(args []string) int {
 			c.Config.Logger.Info("Failed to delete ref", "branch", branch, "error", err)
 		}
 
-		c.Config.Logger.Info("Success! branch has been deleted", "branch", branch, "ref", refName)
+		c.Config.Logger.Info(message.Success("Success! branch has been deleted"), "branch", branch, "ref", refName)
 	}
 
 	return 0

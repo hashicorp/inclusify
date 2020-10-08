@@ -12,6 +12,7 @@ import (
 	"github.com/google/go-github/v32/github"
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/message"
 	"github.com/otiai10/copy"
 
 	git "github.com/go-git/go-git/v5"
@@ -190,6 +191,6 @@ func (c *CreateScaffoldCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *CreateScaffoldCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
+	c.Config.Logger.Error(message.Error(err.Error()))
 	return 1
 }
