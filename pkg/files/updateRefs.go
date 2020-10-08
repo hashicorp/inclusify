@@ -84,7 +84,16 @@ func UpdateReferences(c *UpdateRefsCommand, dir string) (filesChanged bool, err 
 				return err
 			}
 			// Find and replace all references from $base to $target within the files
-			newContents := strings.ReplaceAll(string(read), c.Config.Base, c.Config.Target)
+			var newContents string
+			lines := strings.Split(string(read), "\n")
+			for _, line := range lines {
+				// Don't find/replace lines that contains go imports
+				if !isLineContainsGoImport(line) {
+					line = strings.ReplaceAll(line, c.Config.Base, c.Config.Target)
+				}
+				newContents += line + "\n"
+			}
+
 			// Set flag to true if the file was modified
 			if newContents != string(read) {
 				filesChanged = true
@@ -105,6 +114,11 @@ func UpdateReferences(c *UpdateRefsCommand, dir string) (filesChanged bool, err 
 	}
 
 	return filesChanged, nil
+}
+
+func isLineContainsGoImport(line string) bool {
+	// checks if line contains import or github.com
+	return strings.Contains(line, "github.com") && strings.Contains(line, "import")
 }
 
 // GitPush adds, commits, and pushes all changes to $tmpBranch
