@@ -5,7 +5,7 @@ import (
 )
 
 // Version is the current version of inclusify.
-var Version = "0.2.0"
+var Version = "0.2.1"
 
 // SemVer is an instance of version.Version. This has the secondary
 // benefit of verifying during tests and init time that our version is a
