@@ -1,3 +1,8 @@
+### This builds and packages inclusify on every branch push in the repo.
+### Artifacts are uploaded to GitHub to help with debugging.
+### The GitHub release step performs the actions outlined in build.goreleaser.yml. 
+
+
 name: Build
 
 on:

@@ -1,3 +1,9 @@
+### This builds, packages, signs, performs AV and malware scanning, and
+### creates a new GitHub release for the newest version of inclusify. 
+### The GitHub release step performs the actions outlined in 
+### release.goreleaser.yml. A release is triggered when a new tag 
+### is pushed in the format vX.X.X
+
 name: Release
 
 on:
