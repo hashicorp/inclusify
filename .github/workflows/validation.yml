@@ -1,3 +1,8 @@
+### This runs GitHub's static analysis engine, CodeQL, against the repo's source code 
+### to find security vulnerabilities. It then automatically uploads the results
+### to GitHub so they can be displayed in the repo's security tab. 
+### Source: https://github.com/github/codeql-action
+
 name: Code Scanning
 
 on:
@@ -6,7 +11,7 @@ on:
 
 jobs: 
   scanning:
-    name: Code Scanning
+    name: CodeQL Scanning
     runs-on: ubuntu-latest
 
     steps:
@@ -31,3 +36,4 @@ jobs:
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
+  
