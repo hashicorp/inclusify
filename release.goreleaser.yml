@@ -3,6 +3,7 @@ before:
     - go test ./...
 
 builds:
+  # Build, sign, and notarize the darwin and windows packages
   - id: signable
     mod_timestamp: '{{ .CommitTimestamp }}'
     targets:
@@ -23,6 +24,7 @@ builds:
       - -trimpath
     ldflags:
       - -X main.GitCommit={{ .Commit }}
+  # Build the linux packages
   - mod_timestamp: '{{ .CommitTimestamp }}'
     targets:
       - linux_386
