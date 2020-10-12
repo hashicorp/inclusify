@@ -48,7 +48,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v1
         with:
           version: latest
-          args: release --skip-validate --timeout "60m" 
+          args: release --skip-validate --timeout "60m" --config release.goreleaser.yml
         env:
           PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
@@ -56,14 +56,6 @@ jobs:
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
           CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
-      - name: Upload artifacts to actions workflow
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ github.event.repository.name }}-artifacts
-          path: |
-            ${{ github.workspace }}/dist/*.zip
-            ${{ github.workspace }}/dist/*.sig
-            ${{ github.workspace }}/dist/*SHA256
       - name: Run clamAV antivirus scanner
         run: sudo clamscan ${{ github.workspace }}/dist/
       - name: Run maldet malware scanner

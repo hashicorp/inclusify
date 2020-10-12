@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.15'
+      - name: GitHub Release
+        uses: goreleaser/goreleaser-action@v1
+        with:
+          version: latest
+          args: release --skip-validate --skip-sign --skip-publish --timeout "60m" --config build.goreleaser.yml
+      - name: Upload artifacts to actions workflow
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}-artifacts
+          path: |
+            ${{ github.workspace }}/dist/*.zip
+            ${{ github.workspace }}/dist/*.sig
+            ${{ github.workspace }}/dist/*SHA256
+
