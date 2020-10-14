@@ -1,4 +1,4 @@
-# inclusify [![CI Status](https://circleci.com/gh/hashicorp/inclusify.svg?style=svg&circle-token=0ae7a4e49ff1f990f45536f92c62dab322f13113)](https://circleci.com/gh/hashicorp/inclusify/tree/master)
+# inclusify [![CI Status](https://circleci.com/gh/hashicorp/inclusify.svg?style=svg&circle-token=0ae7a4e49ff1f990f45536f92c62dab322f13113)](https://circleci.com/gh/hashicorp/inclusify/tree/main)
 
 Inclusify is a CLI that will rename the default branch of any GitHub repo and perform all other necessary tasks that go along with it, such as updating CI references, updating the base branch of open PR's, copying the branch protection, and deleting the old base.
 
