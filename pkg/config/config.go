@@ -66,7 +66,7 @@ func ParseAndValidate(args []string, ui cli.Ui) (c *Config, err error) {
 
 	if owner == "" || repo == "" || token == "" {
 		return c, fmt.Errorf(
-			"%s\nPass in all required flags or set environment variables with the 'INCLUSIFY_' prefix.\nRun [subcommand] --help to view required inputs.",
+			"%s\npass in all required flags or set environment variables with the 'INCLUSIFY_' prefix.\nRun [subcommand] --help to view required inputs",
 			message.Error("required inputs are missing"),
 		)
 	}
