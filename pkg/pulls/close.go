@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/message"
 )
 
 // CloseCommand is a struct used to configure a Command for closing an open PR
@@ -28,7 +29,7 @@ func (c *CloseCommand) Run(args []string) int {
 		return c.exitError(err)
 	}
 
-	c.Config.Logger.Info("Successfully closed PR", "number", c.PullNumber)
+	c.Config.Logger.Info(message.Success("Successfully closed PR"), "number", c.PullNumber)
 
 	return 0
 }
@@ -36,6 +37,6 @@ func (c *CloseCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *CloseCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
+	c.Config.Logger.Error(message.Error(err.Error()))
 	return 1
 }

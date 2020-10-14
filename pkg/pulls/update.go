@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-github/v32/github"
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/gh"
+	"github.com/hashicorp/inclusify/pkg/message"
 )
 
 // UpdateCommand is a struct used to configure a Command for updating open
@@ -92,7 +93,7 @@ func (c *UpdateCommand) Run(args []string) int {
 		return c.exitError(err)
 	}
 	if len(pulls) == 0 {
-		c.Config.Logger.Info("Exiting -- There are no open PR's to update")
+		c.Config.Logger.Info(message.Info("Exiting -- There are no open PR's to update"))
 		return 0
 	}
 
@@ -108,7 +109,7 @@ func (c *UpdateCommand) Run(args []string) int {
 		return c.exitError(err)
 	}
 
-	c.Config.Logger.Info("Success!")
+	c.Config.Logger.Info(message.Success("Success!"))
 
 	return 0
 }
@@ -116,7 +117,7 @@ func (c *UpdateCommand) Run(args []string) int {
 // exitError prints the error to the configured UI Error channel (usually stderr) then
 // returns the exit code.
 func (c *UpdateCommand) exitError(err error) int {
-	c.Config.Logger.Error(err.Error())
+	c.Config.Logger.Error(message.Error(err.Error()))
 	return 1
 }
 
