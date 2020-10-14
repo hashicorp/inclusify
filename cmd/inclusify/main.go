@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/inclusify/pkg/config"
 	"github.com/hashicorp/inclusify/pkg/files"
 	"github.com/hashicorp/inclusify/pkg/gh"
-	"github.com/hashicorp/inclusify/pkg/pulls"
 	"github.com/hashicorp/inclusify/pkg/message"
+	"github.com/hashicorp/inclusify/pkg/pulls"
 	"github.com/hashicorp/inclusify/pkg/version"
 )
 
