@@ -117,9 +117,9 @@ func UpdateReferences(c *UpdateRefsCommand, dir string) (filesChanged bool, err 
 }
 
 func isLineContainsGoImport(line string) bool {
-	// checks if line contains import or github.com
-	return strings.Contains(line, "github.com") && strings.Contains(line, "import")
+	return strings.Contains(line, "github.com")
 }
+
 
 // GitPush adds, commits, and pushes all changes to $tmpBranch
 func GitPush(c *UpdateRefsCommand, tmpBranch string, repo *git.Repository, dir string) (err error) {
