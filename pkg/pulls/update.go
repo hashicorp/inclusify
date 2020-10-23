@@ -20,7 +20,7 @@ type UpdateCommand struct {
 
 // GetOpenPRs returns an array of all open PR's that target the $base branch
 func GetOpenPRs(c *UpdateCommand) (pulls []*github.PullRequest, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	c.Config.Logger.Info("Getting all open PR's targeting the branch", "base", c.Config.Base)
