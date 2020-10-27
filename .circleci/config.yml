@@ -4,7 +4,7 @@ references:
   images: 
     go: &GOLANG_IMAGE cimg/go:1.15.2
     base: &CI_BASE cimg/base:2020.09
-    lint: &GOLANG_LINTER_IMAGE golangci/golangci-lint:v1.28.1-alpine
+    lint: &GOLANG_LINTER_IMAGE docker.mirror.hashicorp.services/golangci/golangci-lint:v1.28.1-alpine
 
 orbs:
   codecov: codecov/codecov@1.1.1

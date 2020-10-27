@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:experimental
-FROM golang:1.15 as builder
+FROM docker.mirror.hashicorp.services/golang:1.15 as builder
 
 ENV GOBIN=/go/bin
 ENV CGO_ENABLED=0
@@ -17,7 +17,7 @@ RUN go mod download
 COPY ./ .
 RUN go build -ldflags "" -o inclusify ./cmd/inclusify
 
-FROM alpine:3.12
+FROM docker.mirror.hashicorp.services/alpine:3.12
 RUN apk add --no-cache ca-certificates
 WORKDIR /
 COPY --from=builder \
