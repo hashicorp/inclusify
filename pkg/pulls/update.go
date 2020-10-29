@@ -20,9 +20,6 @@ type UpdateCommand struct {
 
 // GetOpenPRs returns an array of all open PR's that target the $base branch
 func GetOpenPRs(c *UpdateCommand) (pulls []*github.PullRequest, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	c.Config.Logger.Info("Getting all open PR's targeting the branch", "base", c.Config.Base)
 	var allPulls []*github.PullRequest
 	opts := &github.PullRequestListOptions{
@@ -33,7 +30,10 @@ func GetOpenPRs(c *UpdateCommand) (pulls []*github.PullRequest, err error) {
 
 	// Paginate to get all open PR's and store them in 'allPulls' array
 	for {
+		// Create a new context per request so the timeout is not applied globally
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		pulls, resp, err := c.GithubClient.GetPRs().List(ctx, c.Config.Owner, c.Config.Repo, opts)
+		cancel()
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve all open PR's: %w", err)
 		}
@@ -52,13 +52,13 @@ func GetOpenPRs(c *UpdateCommand) (pulls []*github.PullRequest, err error) {
 // UpdateOpenPRs will update all open PR's that pointed to $base to instead point to $target
 // Example: Update all open PR's that point to 'master' to point to 'main'
 func UpdateOpenPRs(c *UpdateCommand, pulls []*github.PullRequest, targetRef *github.Reference) (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	for _, pull := range pulls {
 		pull.Base.Label = &c.Config.Target
 		pull.Base.Ref = targetRef.Ref
+		// Create a new context per request so the timeout is not applied globally
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		updatedPull, _, err := c.GithubClient.GetPRs().Edit(ctx, c.Config.Owner, c.Config.Repo, *pull.Number, pull)
+		cancel()
 		if err != nil {
 			errString := fmt.Sprintf("failed to update base branch of PR %s", *pull.URL)
 			return fmt.Errorf(errString+": %w", err)
