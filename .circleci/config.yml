@@ -2,9 +2,9 @@ version: 2.1
 
 references:
   images: 
-    go: &GOLANG_IMAGE cimg/go:1.15.2
-    base: &CI_BASE cimg/base:2020.09
-    lint: &GOLANG_LINTER_IMAGE golangci/golangci-lint:v1.28.1-alpine
+    go: &GOLANG_IMAGE docker.mirror.hashicorp.services/cimg/go:1.15.2
+    base: &CI_BASE docker.mirror.hashicorp.services/cimg/base:2020.09
+    lint: &GOLANG_LINTER_IMAGE docker.mirror.hashicorp.services/golangci/golangci-lint:v1.28.1-alpine
 
 orbs:
   codecov: codecov/codecov@1.1.1
@@ -55,7 +55,6 @@ jobs:
       - run:
           name: Docker Build
           command: |
-            export DOCKER_BUILDKIT=1
             docker build --progress=plain \
               --tag "${CIRCLE_WORKFLOW_ID}" \
               --file build/package/docker/Dockerfile \
