@@ -12,7 +12,6 @@ import (
 	"github.com/dchest/uniuri"
 	git "github.com/go-git/go-git/v5"
 	plumbing "github.com/go-git/go-git/v5/plumbing"
-	object "github.com/go-git/go-git/v5/plumbing/object"
 	http "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v32/github"
 
@@ -123,11 +122,7 @@ func GitPush(c *UpdateRefsCommand, tmpBranch string, repo *git.Repository, dir s
 
 	c.Config.Logger.Info("Committing changes")
 	commitMsg := fmt.Sprintf("Update references from %s to %s", c.Config.Base, c.Config.Target)
-	commitSha, err := worktree.Commit(commitMsg, &git.CommitOptions{
-		Author: &object.Signature{
-			When: time.Now(),
-		},
-	})
+	commitSha, err := worktree.Commit(commitMsg, &git.CommitOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
