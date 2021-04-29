@@ -6,9 +6,6 @@ references:
     base: &CI_BASE docker.mirror.hashicorp.services/cimg/base:2020.09
     lint: &GOLANG_LINTER_IMAGE docker.mirror.hashicorp.services/golangci/golangci-lint:v1.28.1-alpine
 
-orbs:
-  codecov: codecov/codecov@1.1.1
-
 jobs:
   go-test:
     docker:
@@ -32,9 +29,6 @@ jobs:
               --tags=integration
       - store_test_results:
           path: /tmp/test-results
-      - codecov/upload:
-          when: always
-          upload_name: "$CIRCLE_SHA1"
   go-lint:
     docker:
       - image: *GOLANG_LINTER_IMAGE
