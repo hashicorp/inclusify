@@ -1,16 +1,16 @@
 # inclusify [![CI Status](https://circleci.com/gh/hashicorp/inclusify.svg?style=svg&circle-token=0ae7a4e49ff1f990f45536f92c62dab322f13113)](https://circleci.com/gh/hashicorp/inclusify/tree/main)
 
-Inclusify is a CLI that will rename the default branch of any GitHub repo and perform all other necessary tasks that go along with it, such as updating CI references, updating the base branch of open PR's, copying the branch protection, and deleting the old base.
+Inclusify is a CLI that will rename the default branch of any GitHub repo and perform all other necessary tasks that go along with it, such as updating CI references, updating the base branch of open PRs, copying the branch protection, and deleting the old base.
 
 ```
 Usage: inclusify [--version] [--help] <command> [<args>]
 
 Available commands are:
     createBranches    Create new branches on GitHub. [subcommand]
-    deleteBranches    Delete repo's base branch and other auto-created branches. [subcommand]
+    deleteBranches    Delete repos base branch and other auto-created branches. [subcommand]
     updateRefs        Update code references from base to target in the given repo. [subcommand]
-    updateDefault     Update repo's default branch. [subcommand]
-    updatePulls       Update base branch of open PR's. [subcommand]
+    updateDefault     Update repos default branch. [subcommand]
+    updatePulls       Update base branch of open PRs. [subcommand]
 ```
 
 ## Usage
